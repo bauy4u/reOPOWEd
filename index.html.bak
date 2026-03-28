@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TACTICAL_ARENA // Phase 2 CORE</title>
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D Starry Sky -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { brand: { cyan: '#00f0ff', purple: '#8a2be2', pink: '#ff007f', dark: '#050505', gold: '#ffd700', green: '#00ff00', red: '#ff0000' } },
+                    fontFamily: { mono: ['"Fira Code"', '"JetBrains Mono"', 'monospace'], sans: ['"Noto Sans SC"', '"Inter"', 'sans-serif'] },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite', 'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                        'float-up': 'floatUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards', 'spin-slow': 'spin 15s linear infinite',
+                        'spin-reverse-slow': 'spinReverse 20s linear infinite', 'radar-sweep': 'radarSweep 3s linear infinite',
+                        'scanline': 'scanline 8s linear infinite', 'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fade-in-up': 'fadeInUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards', 'fade-in': 'fadeIn 0.3s ease-out forwards',
+                        'grid-move': 'gridMove 10s linear infinite', 'orb-float': 'orbFloat 20s infinite alternate ease-in-out',
+                        'emoji-drift': 'emojiDrift 15s linear infinite', 'chaos-bg': 'chaosBg 5s infinite alternate linear',
+                        'shimmer': 'shimmer 2s infinite linear', 'flash-white': 'flashWhite 1.5s ease-out forwards',
+                        'emote-float': 'emoteFloat 2s ease-out forwards'
+                    },
+                    keyframes: {
+                        glowPulse: { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.5 } },
+                        float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } },
+                        shake: { '10%, 90%': { transform: 'translate3d(-2px, 2px, 0)' }, '20%, 80%': { transform: 'translate3d(4px, -2px, 0)' }, '30%, 50%, 70%': { transform: 'translate3d(-8px, 4px, 0)' }, '40%, 60%': { transform: 'translate3d(8px, -4px, 0)' } },
+                        floatUp: { '0%': { opacity: 0, transform: 'translateY(20px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+                        fadeInUp: { '0%': { opacity: 0, transform: 'translateY(30px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+                        fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
+                        spinReverse: { '100%': { transform: 'rotate(-360deg)' } },
+                        radarSweep: { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
+                        scanline: { '0%': { transform: 'translateY(-100%)' }, '100%': { transform: 'translateY(100vh)' } },
+                        gridMove: { '0%': { backgroundPosition: '0 0' }, '100%': { backgroundPosition: '0 50px' } },
+                        orbFloat: { '0%': { transform: 'translate(0, 0) scale(1)' }, '100%': { transform: 'translate(100px, 50px) scale(1.2)' } },
+                        emojiDrift: { '0%': { transform: 'translateY(100vh) rotate(0deg)' }, '100%': { transform: 'translateY(-20vh) rotate(360deg)' } },
+                        chaosBg: { '0%': { backgroundColor: '#1a0005', filter: 'hue-rotate(0deg)' }, '50%': { backgroundColor: '#001a1a', filter: 'hue-rotate(180deg)' }, '100%': { backgroundColor: '#1a001a', filter: 'hue-rotate(360deg)' } },
+                        shimmer: { '0%': { backgroundPosition: '-1000px 0' }, '100%': { backgroundPosition: '1000px 0' } },
+                        flashWhite: { '0%': { background: 'white', opacity: 1 }, '100%': { background: 'white', opacity: 0 } },
+                        emoteFloat: { '0%': { opacity: 0, transform: 'translateY(0) scale(0.5)' }, '20%': { opacity: 1, transform: 'translateY(-20px) scale(1.2)' }, '80%': { opacity: 1, transform: 'translateY(-40px) scale(1)' }, '100%': { opacity: 0, transform: 'translateY(-60px) scale(0.8)' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+        
+        body { background-color: #030305; color: #ffffff; font-family: 'Noto Sans SC', sans-serif; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: none; user-select: none; }
+
+        .modal-responsive { width: 100%; max-width: 900px; max-height: 90vh; margin: 1rem; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+
+        .stars-container { position: fixed; inset: 0; z-index: -5; background: radial-gradient(circle at bottom, #110e20 0%, #030305 100%); pointer-events: none; }
+        .stars, .stars2 { position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; display: block; }
+        .stars { background: transparent url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/stars.png') repeat top center; animation: moveStars 100s linear infinite; opacity: 0.4; }
+        .stars2 { background: transparent url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/stars.png') repeat top center; animation: moveStars 150s linear infinite; opacity: 0.2; background-size: 200px 200px; }
+        @keyframes moveStars { from { background-position: 0 0; } to { background-position: -10000px 5000px; } }
+        .shooting-star { position: absolute; left: 50%; top: 50%; width: 100px; height: 2px; background: linear-gradient(90deg, rgba(0, 240, 255, 1), transparent); border-radius: 999px; transform: rotate(-45deg); opacity: 0; animation: shoot 5s linear infinite; z-index: 1; }
+        .shooting-star:nth-child(1) { top: 10%; left: 80%; animation-delay: 0s; } .shooting-star:nth-child(2) { top: 20%; left: 40%; animation-delay: 2.5s; width: 150px; }
+        @keyframes shoot { 0% { transform: translateX(0) translateY(0) rotate(-45deg); opacity: 1; } 20% { opacity: 0; } 100% { transform: translateX(-1000px) translateY(1000px) rotate(-45deg); opacity: 0; } }
+
+        .bg-grid-perspective { position: fixed; inset: 0; z-index: -5; background-color: #030305; background-image: linear-gradient(to right, rgba(0, 240, 255, 0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 240, 255, 0.08) 1px, transparent 1px); background-size: 50px 50px; transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px); pointer-events: none;}
+        .bg-orbs-container { position: fixed; inset: 0; z-index: -5; background-color: #04020a; overflow: hidden; pointer-events: none;}
+        .orb { position: absolute; border-radius: 50%; filter: blur(80px); }
+        .orb-1 { width: 50vw; height: 50vw; background: rgba(0, 240, 255, 0.2); top: -20vh; left: -10vw; } .orb-2 { width: 60vw; height: 60vw; background: rgba(138, 43, 226, 0.2); bottom: -20vh; right: -10vw; animation-delay: -5s; } .orb-3 { width: 40vw; height: 40vw; background: rgba(255, 0, 127, 0.15); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -10s; }
+        .bg-abstract-container { position: fixed; inset: 0; z-index: -5; background-color: #050505; overflow: hidden; pointer-events: none;}
+        .floating-glyph { position: absolute; font-size: 5rem; opacity: 0.05; color: #00f0ff; filter: drop-shadow(0 0 10px #00f0ff); }
+        .bg-chaos-wrap { position: fixed; inset: 0; z-index: -5; overflow: hidden; filter: saturate(2) contrast(1.5); pointer-events: none;}
+        .chaos-emoji { position: absolute; font-size: 15rem; opacity: 0; animation: chaosMove infinite alternate ease-in-out; text-shadow: 0 0 30px rgba(255,255,255,0.8); }
+        @keyframes chaosMove { 0% { transform: translate(-20vw, -20vh) scale(0.1) skew(0deg) rotate(0deg); opacity: 0; filter: blur(15px); } 20% { opacity: 0.8; filter: blur(0px); } 50% { transform: translate(60vw, 60vh) scale(3) skew(45deg) rotate(180deg); opacity: 1; filter: drop-shadow(0 0 50px red) hue-rotate(90deg); } 80% { opacity: 0.8; filter: blur(0px); } 100% { transform: translate(-30vw, 120vh) scale(0.2) skew(-45deg) rotate(360deg); opacity: 0; filter: blur(20px) hue-rotate(270deg); } }
+        .bg-quantum-wrap { position: fixed; inset: 0; z-index: -5; background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; pointer-events: none;}
+        .quantum-star { position: absolute; left: 50%; top: 50%; width: 3px; height: 200px; transform-origin: top center; animation: warpExpand infinite ease-in; opacity: 0; }
+        @keyframes warpExpand { 0% { transform: rotate(var(--rot)) translateY(20px) scaleY(0.1); opacity: 0; } 50% { opacity: 1; } 100% { transform: rotate(var(--rot)) translateY(1200px) scaleY(3); opacity: 0; } }
+
+        .scanlines { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1)); background-size: 100% 4px; opacity: 0.4; }
+        .radar-cone { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent 70%, rgba(0, 240, 255, 0.3) 100%); animation: radarSweepAnim 3s linear infinite; z-index: 0; pointer-events: none; }
+        @keyframes radarSweepAnim { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .glass-panel { background: rgba(15, 15, 20, 0.55); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.06); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
+        .glass-panel-heavy { background: rgba(5, 5, 8, 0.85); backdrop-filter: blur(30px); border: 1px solid rgba(0, 240, 255, 0.2); box-shadow: 0 0 50px rgba(0, 240, 255, 0.1); }
+
+        .frame-default { border: 1px solid rgba(255,255,255,0.2); }
+        .frame-neon { border: 2px solid #00f0ff; box-shadow: 0 0 10px #00f0ff, inset 0 0 10px #00f0ff; }
+        .frame-inferno { border: 2px solid #ff3300; box-shadow: 0 0 15px #ff3300, inset 0 0 10px #ff0000; animation: pulse-fast 1s infinite; }
+        .frame-gold { border: 2px solid #ffd700; box-shadow: 0 0 10px #ffd700, inset 0 0 5px #ffd700; }
+
+        .holo-slot { position: relative; background: rgba(0, 240, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 10; }
+        .holo-slot:hover:not(.locked) { transform: translateY(-4px); }
+        
+        .card-default { border-color: rgba(255,255,255,0.1); } .card-default:hover:not(.locked) { border-color: rgba(255,255,255,0.4); box-shadow: 0 5px 15px rgba(0,240,255,0.2); }
+        .card-matrix { border-color: #00ff00; background: rgba(0,255,0,0.05); color: #00ff00; box-shadow: inset 0 0 10px rgba(0,255,0,0.1); } .card-matrix:hover:not(.locked) { border-color: #00ff00; box-shadow: 0 5px 15px rgba(0,255,0,0.3), inset 0 0 10px rgba(0,255,0,0.2); }
+        .card-blood { border-color: #ff0000; background: rgba(255,0,0,0.08); color: #ff3333; box-shadow: inset 0 0 15px rgba(255,0,0,0.2); } .card-blood:hover:not(.locked) { border-color: #ff0000; box-shadow: 0 5px 20px rgba(255,0,0,0.4), inset 0 0 15px rgba(255,0,0,0.3); }
+
+        .card-default.selected-own { border-color: #00f0ff !important; background-color: rgba(0, 240, 255, 0.15) !important; box-shadow: 0 0 20px rgba(0, 240, 255, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.2) !important; color: white !important; text-shadow: 0 0 10px #00f0ff !important; }
+        .card-matrix.selected-own { border-color: #00ff00 !important; background-color: rgba(0, 255, 0, 0.2) !important; box-shadow: 0 0 20px rgba(0, 255, 0, 0.5), inset 0 0 10px rgba(0, 255, 0, 0.3) !important; color: white !important; text-shadow: 0 0 10px #00ff00 !important; }
+        .card-blood.selected-own { border-color: #ff0000 !important; background-color: rgba(255, 0, 0, 0.25) !important; box-shadow: 0 0 25px rgba(255, 0, 0, 0.6), inset 0 0 15px rgba(255, 0, 0, 0.4) !important; color: white !important; text-shadow: 0 0 10px #ff0000 !important; }
+        .holo-slot.selected-target { border-color: #ff007f !important; background-color: rgba(255, 0, 127, 0.15) !important; box-shadow: 0 0 20px rgba(255, 0, 127, 0.4), inset 0 0 10px rgba(255, 0, 127, 0.2) !important; color: white !important; text-shadow: 0 0 10px #ff007f !important; }
+        .holo-slot.locked-zero { border-color: rgba(255, 0, 0, 0.4) !important; background: rgba(255, 0, 0, 0.05) !important; cursor: not-allowed !important; opacity: 0.5 !important; pointer-events: none !important; box-shadow: none !important; text-shadow: none !important; color: white !important;}
+        .holo-slot.locked-zero::before { content: 'X'; position: absolute; font-family: monospace; font-size: 3rem; color: rgba(255,0,0,0.5); z-index: 0; }
+
+        .player-shield-wrapper::after { content: ''; position: absolute; top: -15px; left: -15px; right: -15px; bottom: -15px; border: 2px solid rgba(0, 240, 255, 0.3); border-radius: 20px; box-shadow: 0 0 30px rgba(0, 240, 255, 0.15), inset 0 0 15px rgba(0, 240, 255, 0.1); animation: shield-pulse 3s ease-in-out infinite; pointer-events: none; z-index: 50; }
+        @keyframes shield-pulse { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.02); } }
+
+        @keyframes projectileFly { 0% { transform: translate(0, 0) rotate(var(--angle)) scale(0.5); opacity: 0; } 15% { opacity: 1; transform: translate(calc(var(--dx) * 0.15), calc(var(--dy) * 0.15)) rotate(var(--angle)) scale(1.3); } 85% { opacity: 1; transform: translate(calc(var(--dx) * 0.85), calc(var(--dy) * 0.85)) rotate(var(--angle)) scale(1.1); } 100% { transform: translate(var(--dx), var(--dy)) rotate(var(--angle)) scale(1); opacity: 0; } }
+        .projectile-item { position: absolute; width: 40px; height: 40px; margin-top: -20px; margin-left: -20px; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 1000; animation: projectileFly 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+        .ring-default { transition: all 1s linear; }
+        .ring-magic { transform-origin: center; animation: spin-slow 8s linear infinite !important; filter: drop-shadow(0 0 15px #ff007f) !important; }
+        .ring-magic circle:nth-child(2) { stroke-dasharray: 10 25 !important; stroke: #ff007f !important; }
+        .ring-cyber { transform-origin: center; animation: spin-reverse-slow 5s linear infinite !important; filter: drop-shadow(0 0 15px #8a2be2) !important; }
+        .ring-cyber circle:nth-child(2) { stroke-dasharray: 40 80 150 !important; stroke-width: 5 !important; stroke: #8a2be2 !important; }
+
+        .tarot-card { perspective: 1000px; width: 200px; height: 280px; cursor: pointer; }
+        .tarot-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
+        .tarot-card.flipped .tarot-inner { transform: rotateY(180deg); }
+        .tarot-front, .tarot-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 1rem; display: flex; flex-col items-center justify-center border-2; }
+        .tarot-front { background: linear-gradient(135deg, #111, #222); border-color: rgba(255,255,255,0.1); transform: rotateY(180deg); }
+        .tarot-back { background: url('https://www.transparenttextures.com/patterns/stardust.png'), linear-gradient(135deg, #0f0c29, #302b63, #24243e); border-color: rgba(0, 240, 255, 0.4); box-shadow: 0 0 20px rgba(0,240,255,0.2); }
+
+        .module-box { background: rgba(0,0,0,0.8); border: 1px solid #00f0ff; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(0,240,255,0.3); }
+        .tooltip-custom { visibility: hidden; opacity: 0; transition: all 0.2s; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(10px); z-index: 100; white-space: nowrap; pointer-events: none; }
+        .has-tooltip:hover .tooltip-custom { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(-5px); }
+
+        .cyber-btn { clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px); }
+        .hide-scroll::-webkit-scrollbar { width: 0px; } .hide-scroll::-webkit-scrollbar-track { background: transparent; } .hide-scroll::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.3); border-radius: 2px; }
+        .text-gradient { background: linear-gradient(to right, #00f0ff, #8a2be2, #ff007f); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .text-gold-gradient { background: linear-gradient(to right, #ffd700, #ffaa00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<body class="bg-black">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // ==========================================
+        // SOCKET.IO 连接与配置
+        // ==========================================
+        const SERVER_URL = window.location.origin; 
+        const socket = io(SERVER_URL);
+
+        // --- I18N Dictionary ---
+        const I18N = {
+            zh: {
+                login_title: '战术竞技场', login_sub: '数字处决协议 // SOCIAL.NET', login_ph: '输入特工代号...', login_btn: '接入矩阵', login_pass: '输入特工密钥...', login_reg: '注册新权限', login_toggle_reg: '申请新代号', login_toggle_log: '直接接入矩阵',
+                err_exist: '该代号已被占用', err_wrong: '验证失败', err_empty: '凭证不能为空',
+                lobby_active: '活跃节点', lobby_dossier: '特工档案', lobby_wins: '胜率', lobby_matches: '执行次数', lobby_logout: '断开连接', lobby_settings: '特工设置', lobby_create: '初始化新节点', lobby_join: '加入', lobby_empty: '大厅暂无公开节点',
+                lobby_daily: '每日指令', lobby_social: '特工网络', lobby_recent: '近期遭遇',
+                quest1: '嗜血渴望', quest1_desc: '累计处决 3 名特工.', quest2: '战术狂热', quest2_desc: '完成 5 场模拟.', quest3: '火力倾泻', quest3_desc: '累计造成 20 点伤害.',
+                room_wait: '战术空间已建立', room_wait_more: '>> 等待操作指令...', room_add_bot: '注入 AI 幽灵', room_start: '强制执行协议', room_invite: '征召特工',
+                phase_confirm: '确认执行协议', phase_action: '系统协议可用', phase_tnt: '锁定爆破目标', phase_gameover: '模拟结束', select_atk_target: '锁定攻击目标',
+                log_init: '竞技场初始化完毕。欧米茄协议生效。', log_deadlock: '死锁判定：目标已被锁定，跳过回合。', action_skip: '[ 结束回合 ]', stat_hp: '生命值', btn_exit: '撤离节点', arena_proto: 'CORE PROTOCOL HUB',
+                w_arrow: '单支箭矢', w_shield: '被动护盾', w_sword: '近战利刃', w_darrow: '双重箭矢', w_bow: '长弓', w_cross: '重弩', w_pot: '恢复药剂', w_tnt: '高爆 TNT',
+                c_forge: '锻造 (剑升1级)', c_power: '力量过载 (下击伤害x2)', c_heal: '强效治疗 (+2血)',
+                create_title: '初始化协议节点', create_max: '节点容量', create_hp: '初始护盾值', create_cancel: '取消', create_confirm: '创立节点',
+                victory: 'MISSION COMPLETE', victory_sub: '协议执行完毕。赛后数据生成中...',
+                set_title: '个性化设定', set_avatar: '特工影像', set_bg: '作战视界', set_sec: '安全中心', set_oldp: '原密钥', set_newp: '新密钥', set_save: '保存协议', set_sfx: '系统音效', set_bgm: '脉冲底噪 (Synth BGM)', set_frame: '特工边框', set_cardskin: '全息卡槽', set_title_opt: '战术称号', set_ring: '倒计时法阵', set_sig: '个性签名 (限20字)',
+                bg_stars: '深空星海', bg_grid: '赛博矩阵', bg_orbs: '液态幽能', bg_abstract: '神秘漂流', bg_chaos: '狂乱视界(传说)', bg_quantum: '量子跃迁(传说)',
+                frame_default: '标准隐蔽', frame_neon: '霓虹流光', frame_inferno: '地狱烈焰', frame_gold: '鎏金矩阵',
+                card_default: '高透玻璃', card_matrix: '骇客指令', card_blood: '鲜血盛宴',
+                btn_market: '黑市交易', btn_db: '战术图鉴', btn_warp: '星空祈愿', btn_modules: '战术模块', preview: '局内预览效果', warp_cheat: '[DEBUG: +10000 CR]',
+                tab_basic: '基础设定', tab_cosmetics: '外观改装', tab_security: '安全协议', cat_bg: '作战视界', cat_frame: '特工边框', cat_card: '全息卡槽',
+                bm_title: '黑市 (MARKET)', bm_credits: '可用信用点', bm_buy: '解密购买', bm_locked: '权限锁定', bm_unlocked: '已解密', bm_desc: '在此消耗实战获取的信用点，直接购买基础外观。',
+                db_title: '数据库 (DATABASE)', db_desc: '战术手牌武器映射协议。', mod_title: '战术模块 (MODULES)', mod_desc: '植入被动芯片，改变局内底层战术逻辑。', mod_equip: '植入芯片', mod_equipped: '当前运作中', mod_uninstall: '[ 卸载模块 ]', mod_empty: '前往星空祈愿获取战术模块...',
+                stat_op: '特工代号', stat_dmg: '输出伤害', stat_taken: '承受伤害', stat_kills: '处决数', stat_status: '状态', stat_mvp: 'MVP', reward: '基础酬金 + 赏金', q_bonus: '突破奖励',
+                warp_title: 'CONSTELLATION WARP', warp_1: '单次观测 (160 CR)', warp_10: '深度观测 (1600 CR)', warp_desc: '在此向深空祈愿，获取绝版称号、传奇法阵及稀有外观。', warp_pity: '距离绝品保底: ', warp_click_star: '拖动星图，点击星座以观测...', warp_tap_reveal: '点击揭晓...', warp_summary: '观测结果汇总', warp_skip: 'SKIP >>',
+                soc_status_online: '空闲中', soc_status_ingame: '模拟战中', soc_req_sent: '请求已发送', soc_add_friend: '添加好友', soc_pm: '发送私信', soc_transfer: '转移 CR (10% 税)', soc_remove: '解除链接', soc_invite: '发出征召', soc_accept: '同意', soc_decline: '拒绝', soc_reqs: '待处理申请'
+            },
+            en: {
+                login_title: 'TACTICAL ARENA', login_sub: 'Digital Execution // SOCIAL.NET', login_ph: 'Enter Operator Alias...', login_btn: 'Enter Grid', login_pass: 'Secret Key...', login_reg: 'Register Access', login_toggle_reg: 'Need Alias?', login_toggle_log: 'Have Access?',
+                err_exist: 'Alias assigned.', err_wrong: 'Invalid Key.', err_empty: 'Credentials required.',
+                lobby_active: 'Active Nodes', lobby_dossier: 'Dossier', lobby_wins: 'Win Rate', lobby_matches: 'Executions', lobby_logout: 'Terminate', lobby_settings: 'Settings', lobby_create: 'Initialize Node', lobby_join: 'Connect', lobby_empty: 'No public nodes found.',
+                lobby_daily: 'DAILY DIRECTIVES', lobby_social: 'NETWORK', lobby_recent: 'RECENT',
+                quest1: 'Bloodlust', quest1_desc: 'Eliminate 3 operators.', quest2: 'Tactical Fanatic', quest2_desc: 'Complete 5 simulations.', quest3: 'Firepower', quest3_desc: 'Deal 20 total damage.',
+                room_wait: 'TACTICAL SPACE SECURED', room_wait_more: '>> Awaiting input...', room_add_bot: 'Inject AI Ghost', room_start: 'FORCE EXECUTE', room_invite: 'Draft Operator',
+                phase_confirm: 'CONFIRM PROTOCOL', phase_action: 'PROTOCOL AVAILABLE', phase_tnt: 'LOCK TNT TARGET', phase_gameover: 'SIMULATION COMPLETE', select_atk_target: 'LOCK ATTACK TARGET',
+                log_init: 'Arena Initialized. Social protocol active.', log_deadlock: 'Deadlock: Targets locked. Turn skipped.', action_skip: '[ END TURN ]', stat_hp: 'HP', btn_exit: 'Evacuate', arena_proto: 'CORE PROTOCOL HUB',
+                w_arrow: 'Single Arrow', w_shield: 'Passive Shield', w_sword: 'Melee Sword', w_darrow: 'Double Arrow', w_bow: 'Longbow', w_cross: 'Heavy Crossbow', w_pot: 'Health Potion', w_tnt: 'High-Explosive TNT',
+                c_forge: 'Forge (Sword Lv+1)', c_power: 'Overload (Next DMG x2)', c_heal: 'Strong Heal (+2 HP)',
+                create_title: 'Initialize Protocol Node', create_max: 'Capacity', create_hp: 'Initial Shield (HP)', create_cancel: 'Cancel', create_confirm: 'Initialize',
+                victory: 'MISSION COMPLETE', victory_sub: 'PROTOCOL EXECUTED. COMPILING STATS...',
+                set_title: 'Personalization', set_avatar: 'Operator Avatar', set_bg: 'Combat Horizon', set_sec: 'Security Center', set_oldp: 'Old Key', set_newp: 'New Key', set_save: 'Save Protocol', set_sfx: 'System SFX', set_bgm: 'Synth BGM', set_frame: 'Avatar Frame', set_cardskin: 'Card Skin', set_title_opt: 'Tactical Title', set_ring: 'Countdown Ring', set_sig: 'Signature (Max 20)',
+                bg_stars: 'Deep Space', bg_grid: 'Cyber Grid', bg_orbs: 'Liquid Orbs', bg_abstract: 'Mystic Drift', bg_chaos: 'Chaos Vision (LEGENDARY)', bg_quantum: 'Quantum Warp (LEGENDARY)',
+                frame_default: 'Stealth', frame_neon: 'Neon Glow', frame_inferno: 'Inferno', frame_gold: 'Cyber Gold',
+                card_default: 'Clear Glass', card_matrix: 'Matrix Code', card_blood: 'Crimson Blood',
+                btn_market: 'MARKET', btn_db: 'DATABASE', btn_warp: 'WARP', btn_modules: 'MODULES', preview: 'LIVE PREVIEW', warp_cheat: '[DEBUG: +10000 CR]',
+                tab_basic: 'BASIC', tab_cosmetics: 'COSMETICS', tab_security: 'SECURITY', cat_bg: 'HORIZONS', cat_frame: 'FRAMES', cat_card: 'CARD SKINS',
+                bm_title: 'BLACK MARKET', bm_credits: 'Available Credits', bm_buy: 'Decrypt & Buy', bm_locked: 'Access Denied', bm_unlocked: 'Decrypted', bm_desc: 'Spend combat credits to purchase basic cosmetics.',
+                db_title: 'DATABASE', db_desc: 'Tactical Hand Weapon Mapping Protocols.', mod_title: 'MODULES', mod_desc: 'Equip passive chips to alter tactical logic.', mod_equip: 'Equip Chip', mod_equipped: 'Active', mod_uninstall: '[ Uninstall Module ]', mod_empty: 'Warp to deep space to obtain modules...',
+                stat_op: 'OPERATOR', stat_dmg: 'DMG DEALT', stat_taken: 'DMG TAKEN', stat_kills: 'EXECUTIONS', stat_status: 'STATUS', stat_mvp: 'MVP', reward: 'Base + Bounty', q_bonus: 'Quest Bonus',
+                warp_title: 'CONSTELLATION WARP', warp_1: 'Observe x1 (160 CR)', warp_10: 'Deep Scan x10 (1600 CR)', warp_desc: 'Warp to deep space to obtain exclusive titles, legendary rings, and rare cosmetics.', warp_pity: 'To Guaranteed Legendary: ', warp_click_star: 'Drag sky, click a constellation to warp...', warp_tap_reveal: 'Click to reveal...', warp_summary: 'Warp Summary', warp_skip: 'SKIP >>',
+                soc_status_online: 'IDLE', soc_status_ingame: 'IN-GAME', soc_req_sent: 'Request Sent', soc_add_friend: 'Add Friend', soc_pm: 'Private Msg', soc_transfer: 'Transfer CR (10% Tax)', soc_remove: 'Remove Link', soc_invite: 'Draft to Node', soc_accept: 'Accept', soc_decline: 'Decline', soc_reqs: 'Pending Reqs'
+            }
+        };
+
+        const getWeapons = (t) => ({ 3: { name: t.w_arrow, icon: '🏹', desc: '基础射击' }, 4: { name: t.w_shield, icon: '🛡️', desc: '抵挡0.5伤害' }, 5: { name: t.w_sword, icon: '🗡️', desc: '切割伤害' }, 6: { name: t.w_darrow, icon: '🏹🏹', desc: '双重打击' }, 7: { name: t.w_bow, icon: '🏹', desc: '长弓投射' }, 8: { name: t.w_cross, icon: '🏹', desc: '机械重弩' }, 9: { name: t.w_pot, icon: '🧪', desc: '恢复HP' }, 0: { name: t.w_tnt, icon: '💣', desc: '爆破伤害' } });
+
+        // 前端保留仅用于 UI 映射展示，实际扣费和随机计算已移交后端
+        const LOOT_POOLS = {
+            3: [ { id: 'title_1', type: 'title', n: '[新晋特工]', c: '#00f0ff' }, { id: 'title_2', type: 'title', n: '[前线兵卒]', c: '#00f0ff' }, { id: 'title_3', type: 'title', n: '[拾荒者]', c: '#00f0ff' }, { id: 'avatar_c1', type: 'avatar', n: 'Emoji 🤡', val: '🤡' }, { id: 'avatar_c2', type: 'avatar', n: 'Emoji 👻', val: '👻' } ],
+            4: [ { id: 'title_4', type: 'title', n: '[霓虹漫步者]', c: '#8a2be2' }, { id: 'title_5', type: 'title', n: '[暗影执行官]', c: '#8a2be2' }, { id: 'frame_neon', type: 'frame', n: '霓虹流光', val: 'frame_neon' }, { id: 'frame_inferno', type: 'frame', n: '地狱烈焰', val: 'frame_inferno' }, { id: 'card_matrix', type: 'card', n: '骇客指令', val: 'card_matrix' }, { id: 'card_blood', type: 'card', n: '鲜血盛宴', val: 'card_blood' }, { id: 'chip_vampire', type: 'chip', n: '吸血鬼模块', icon: '🩸', val: 'chip_vampire', desc: '近战利刃(5)造成伤害时恢复0.5 HP' }, { id: 'chip_heavy', type: 'chip', n: '重型装甲', icon: '🪨', val: 'chip_heavy', desc: '最大HP+2，但护盾(4)失效' }, { id: 'chip_sniper', type: 'chip', n: '鹰眼准星', icon: '🦅', val: 'chip_sniper', desc: '长弓(7)与重弩(8)额外+0.5伤害' }, { id: 'chip_medic', type: 'chip', n: '战地医疗', icon: '💉', val: 'chip_medic', desc: '恢复药剂(9)额外+1HP，但最大HP-2' } ],
+            5: [ { id: 'title_6', type: 'title', n: '[👑 欧米茄掌控者]', c: '#ffd700' }, { id: 'title_7', type: 'title', n: '[🌌 维度观测者]', c: '#ffd700' }, { id: 'bg_chaos', type: 'bg', n: '狂乱视界', val: 'chaos' }, { id: 'bg_quantum', type: 'bg', n: '量子跃迁', val: 'quantum' }, { id: 'ring_magic', type: 'ring', n: '魔法符文法阵', val: 'ring_magic' }, { id: 'ring_cyber', type: 'ring', n: '赛博序列圆环', val: 'ring_cyber' }, { id: 'chip_fury', type: 'chip', n: '极度狂热', icon: '🔥', val: 'chip_fury', desc: 'TNT(0)伤害+1.5，引爆受1反噬' }, { id: 'chip_assassin', type: 'chip', n: '暗影刺客', icon: '🥷', val: 'chip_assassin', desc: '近战利刃(5)伤害+1.0，护盾失效' } ]
+        };
+
+        const getRank = (wins) => {
+            if(wins >= 100) return { n: '🌌 欧米茄', c: '#ff007f', bg: 'bg-pink-500/20 border-pink-500/50' };
+            if(wins >= 60) return { n: '💎 钻石大师', c: '#00f0ff', bg: 'bg-cyan-500/20 border-cyan-500/50' };
+            if(wins >= 30) return { n: '🥇 黄金精英', c: '#ffd700', bg: 'bg-yellow-500/20 border-yellow-500/50' };
+            if(wins >= 10) return { n: '🥈 白银先锋', c: '#c0c0c0', bg: 'bg-gray-400/20 border-gray-400/50' };
+            return { n: '🥉 黑铁特工', c: '#8c7853', bg: 'bg-orange-900/20 border-orange-900/50' };
+        };
+
+        // --- Icons ---
+        const IconUser = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+        const IconGlobe = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+        const IconLogOut = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
+        const IconSettings = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
+        const IconCrosshair = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>;
+        const IconCart = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>;
+        const IconBook = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
+        const IconStar = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+        const IconUpload = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>;
+        const IconSend = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
+        const IconMessageCircle = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>;
+        const IconMinimize = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>;
+        const IconCpu = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>;
+        const IconChevronDown = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>;
+        const IconUsers = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+        const IconMail = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
+        const IconGift = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>;
+        const IconUserPlus = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>;
+        const IconClock = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+
+        // --- Audio Engine ---
+        let bgmCtx = null; window.bgmTimer = null; window.isBgmOn = false;
+        const ensureAudioContext = () => { if (!bgmCtx) { bgmCtx = new (window.AudioContext || window.webkitAudioContext)(); } if (bgmCtx.state === 'suspended') bgmCtx.resume(); return bgmCtx; };
+        const toggleBGM = (isOn) => {
+            window.isBgmOn = isOn; if (!isOn) { if (window.bgmTimer) { clearInterval(window.bgmTimer); window.bgmTimer = null; } return; }
+            if (window.bgmTimer) return; 
+            try {
+                const ctx = ensureAudioContext();
+                const chords = [ [146.83, 174.61, 220.00, 293.66], [130.81, 164.81, 196.00, 261.63], [116.54, 146.83, 174.61, 233.08], [110.00, 138.59, 164.81, 220.00] ];
+                let step = 0;
+                const playBeat = () => {
+                    if (ctx.state === 'suspended') return;
+                    const t = ctx.currentTime + 0.05; const chordIdx = Math.floor(step / 16) % chords.length; const chord = chords[chordIdx];
+                    if (step % 4 === 0 || step % 4 === 3) {
+                        const bOsc = ctx.createOscillator(); const bGain = ctx.createGain(); bOsc.type = 'sawtooth'; bOsc.frequency.value = chord[0] / 2; bOsc.connect(bGain); bGain.connect(ctx.destination);
+                        bGain.gain.setValueAtTime(0.2, t); bGain.gain.exponentialRampToValueAtTime(0.001, t + 0.25); bOsc.start(t); bOsc.stop(t + 0.25);
+                    }
+                    if (step % 2 !== 0 || Math.random() > 0.3) {
+                        const mOsc = ctx.createOscillator(); const mGain = ctx.createGain(); mOsc.type = 'square'; mOsc.frequency.value = chord[Math.floor(Math.random() * chord.length)] * (Math.random() > 0.5 ? 2 : 1);
+                        mOsc.connect(mGain); mGain.connect(ctx.destination); mGain.gain.setValueAtTime(0.08, t); mGain.gain.exponentialRampToValueAtTime(0.001, t + 0.1); mOsc.start(t); mOsc.stop(t + 0.1);
+                    }
+                    step++;
+                };
+                window.bgmTimer = setInterval(playBeat, 110); 
+            } catch(e) {}
+        };
+        const playSFX = (type) => {
+            if (window.isBgmOn && bgmCtx && bgmCtx.state === 'suspended') bgmCtx.resume();
+            if (localStorage.getItem('tactical_sfx') === 'off') return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)(); if(!ctx) return;
+                const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination);
+                if (type === 'hit') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.1); gain.gain.setValueAtTime(0.3, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1); osc.start(); osc.stop(ctx.currentTime + 0.1); } 
+                else if (type === 'heal') { osc.type = 'sine'; osc.frequency.setValueAtTime(300, ctx.currentTime); osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 0.2); gain.gain.setValueAtTime(0.1, ctx.currentTime); gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3); osc.start(); osc.stop(ctx.currentTime + 0.3); } 
+                else if (type === 'select') { osc.type = 'square'; osc.frequency.setValueAtTime(800, ctx.currentTime); gain.gain.setValueAtTime(0.05, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05); osc.start(); osc.stop(ctx.currentTime + 0.05); }
+                else if (type === 'error') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, ctx.currentTime); gain.gain.setValueAtTime(0.1, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2); osc.start(); osc.stop(ctx.currentTime + 0.2); }
+                else if (type === 'gacha_flip') { osc.type = 'sine'; osc.frequency.setValueAtTime(1200, ctx.currentTime); gain.gain.setValueAtTime(0.1, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3); osc.start(); osc.stop(ctx.currentTime + 0.3); }
+                else if (type === 'gacha_5star') { osc.type = 'square'; osc.frequency.setValueAtTime(400, ctx.currentTime); osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.5); gain.gain.setValueAtTime(0.2, ctx.currentTime); gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1); osc.start(); osc.stop(ctx.currentTime + 1); }
+                else if (type === 'emote') { osc.type = 'sine'; osc.frequency.setValueAtTime(800, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.2); gain.gain.setValueAtTime(0.1, ctx.currentTime); gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3); osc.start(); osc.stop(ctx.currentTime + 0.3); }
+            } catch(e) {}
+        };
+
+        // --- Helpers for 3D ---
+        const createCircleTexture = () => {
+            const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64; const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            grad.addColorStop(0, 'rgba(255,255,255,1)'); grad.addColorStop(0.4, 'rgba(255,255,255,0.8)'); grad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(canvas);
+        };
+        const createTextSprite = (text) => {
+            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64; const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(0,0,0,0)'; ctx.fillRect(0,0,256,64); ctx.font = 'bold 28px "Noto Sans SC", sans-serif'; ctx.fillStyle = 'rgba(0, 240, 255, 0.9)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 128, 32);
+            const tex = new THREE.CanvasTexture(canvas); const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, blending: THREE.AdditiveBlending });
+            const sprite = new THREE.Sprite(mat); sprite.scale.set(100, 25, 1); return sprite;
+        };
+
+        // --- Common UI Components ---
+        const AvatarDisplay = ({ avatar, name, className, frame }) => {
+            const frameClass = frame==='frame_neon' ? 'frame-neon' : frame==='frame_inferno' ? 'frame-inferno' : frame==='frame_gold' ? 'frame-gold' : 'frame-default';
+            if (avatar === 'bot_avatar') return <div className={`flex items-center justify-center text-[2em] bg-black ${className} ${frameClass}`}>🤖</div>;
+            if (!avatar) return <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${name}`} className={`${className} ${frameClass}`} alt="avatar"/>;
+            if (avatar.startsWith('data:image')) return <img src={avatar} className={`${className} object-cover ${frameClass}`} alt="avatar"/>;
+            if (avatar.length <= 3) return <div className={`flex items-center justify-center text-[1.5em] bg-black ${className} ${frameClass}`}>{avatar}</div>;
+            return <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${avatar}`} className={`${className} ${frameClass}`} alt="avatar"/>;
+        };
+
+        // --- Profile Modal (SOCKET REFACTORED) ---
+        const ProfileModal = ({ targetName, currentUser, onClose, t }) => {
+            const [targetData, setTargetData] = useState(null);
+            const [loading, setLoading] = useState(true);
+            
+            useEffect(() => {
+                if (targetName.startsWith('AI_')) {
+                    setTargetData({
+                        username: targetName,
+                        stats: { wins: Math.floor(Math.random()*100), matches: 100 },
+                        settings: { signature: '01000010 01001111 01010100', title: '[AI_GHOST]', avatar: 'bot_avatar' },
+                        status: 'in_game'
+                    });
+                    setLoading(false); return;
+                }
+                // Request live data from server
+                socket.emit('get_profile', targetName, (data) => {
+                    if(data) setTargetData(data);
+                    setLoading(false);
+                });
+            }, [targetName]);
+
+            if (loading) return null;
+            if (!targetData) return (
+                <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center animate-fade-in" onClick={onClose}>
+                    <div className="glass-panel p-8 text-brand-pink font-mono" onClick={e=>e.stopPropagation()}>[ ERROR ] Operator not found in DB.<button onClick={onClose} className="block mt-4 text-white">CLOSE</button></div>
+                </div>
+            );
+
+            const rank = getRank(targetData.stats?.wins || 0);
+            const isMe = targetName === currentUser.username;
+            const isFriend = currentUser.friends?.includes(targetName);
+            const isBot = targetName.startsWith('AI_');
+            // Look into my own friend requests to see if I sent one to this target (server now handles this, but we can check local state for immediate UI update)
+            const reqSent = targetData.friendRequests?.some(r => r.from === currentUser.username);
+
+            const sendFriendReq = () => {
+                if(isBot) return playSFX('error');
+                socket.emit('send_friend_req', targetName);
+                playSFX('heal');
+            };
+
+            return (
+                <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center animate-fade-in" onClick={onClose} onContextMenu={e=>e.preventDefault()}>
+                    <div className="glass-panel-heavy p-8 rounded-3xl modal-responsive items-center relative overflow-hidden" onClick={e=>e.stopPropagation()}>
+                        <div className="absolute inset-0 bg-gradient-to-b from-brand-cyan/10 to-transparent pointer-events-none"></div>
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white text-xl z-10">&times;</button>
+                        
+                        <AvatarDisplay avatar={targetData.settings?.avatar} name={targetData.username} frame={targetData.settings?.frame} className="w-24 h-24 rounded-full border-4 border-black shadow-[0_0_20px_rgba(0,240,255,0.3)] mb-4 relative z-10" />
+                        <div className="flex items-center gap-2 relative z-10 mb-1">
+                            <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm border ${rank.bg}`} style={{color: rank.c}}>{rank.n}</div>
+                            <h2 className="text-2xl font-black text-white tracking-wider">{targetData.username}</h2>
+                        </div>
+                        {targetData.settings?.title && <div className="text-xs font-bold text-brand-gold mb-3 bg-brand-gold/10 px-3 py-1 rounded-full border border-brand-gold/30 relative z-10">{targetData.settings.title}</div>}
+                        
+                        <div className="w-full bg-black/50 p-4 rounded-xl border border-white/10 mb-6 relative z-10">
+                            <p className="text-sm font-mono text-gray-300 italic text-center break-words">"{targetData.settings?.signature || '这个特工很神秘，什么都没留下...'}"</p>
+                        </div>
+                        
+                        <div className="w-full grid grid-cols-2 gap-4 mb-6 relative z-10">
+                            <div className="bg-black/60 p-3 rounded-lg border border-brand-cyan/20 text-center">
+                                <div className="text-xs font-mono text-gray-400 mb-1">{t.lobby_wins}</div>
+                                <div className="text-xl font-bold text-brand-cyan">{Math.max(0, Math.round(((targetData.stats?.wins||0)/Math.max(targetData.stats?.matches||1,1))*100))||0}%</div>
+                            </div>
+                            <div className="bg-black/60 p-3 rounded-lg border border-brand-purple/20 text-center">
+                                <div className="text-xs font-mono text-gray-400 mb-1">{t.lobby_matches}</div>
+                                <div className="text-xl font-bold text-brand-purple">{targetData.stats?.matches||0}</div>
+                            </div>
+                        </div>
+
+                        {!isMe && !isBot && (
+                            <div className="w-full relative z-10">
+                                {isFriend ? (
+                                    <button disabled className="w-full py-3 rounded-xl bg-green-500/20 text-green-400 font-bold tracking-widest border border-green-500/30 flex items-center justify-center gap-2"><IconUser/> 已是特工网络成员</button>
+                                ) : reqSent ? (
+                                    <button disabled className="w-full py-3 rounded-xl bg-gray-500/20 text-gray-400 font-bold tracking-widest border border-gray-500/30 flex items-center justify-center gap-2"><IconClock/> {t.soc_req_sent}</button>
+                                ) : (
+                                    <button onClick={sendFriendReq} className="cyber-btn w-full bg-brand-cyan text-black font-black py-3 hover:bg-white transition tracking-widest shadow-[0_0_15px_rgba(0,240,255,0.4)] flex items-center justify-center gap-2"><IconUserPlus/> {t.soc_add_friend}</button>
+                                )}
+                            </div>
+                        )}
+                        {isBot && (
+                            <div className="w-full relative z-10">
+                                <button disabled className="w-full py-3 rounded-xl bg-gray-500/20 text-gray-400 font-bold tracking-widest border border-gray-500/30 flex items-center justify-center gap-2">AI 实体</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Private Chat Component ---
+        const PrivateChat = ({ friendName, user, onClose }) => {
+            const [text, setText] = useState('');
+            const msgs = user.messages?.[friendName] || [];
+            const endRef = useRef(null);
+            
+            useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs]);
+
+            const sendPM = () => {
+                if(!text.trim()) return;
+                socket.emit('send_pm', { targetName: friendName, text: text.trim() });
+                setText(''); playSFX('select');
+            };
+
+            return (
+                <div className="fixed bottom-6 right-6 md:right-[350px] w-80 max-w-[90vw] h-96 glass-panel-heavy rounded-2xl flex flex-col z-[100] shadow-[0_0_30px_rgba(0,240,255,0.2)] animate-fade-in-up">
+                    <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/60 rounded-t-2xl">
+                        <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div><span className="text-brand-cyan font-mono text-sm font-bold tracking-widest">{friendName}</span></div>
+                        <button onClick={onClose} className="text-gray-400 hover:text-white transition"><IconMinimize /></button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-sm hide-scroll bg-black/40">
+                        {msgs.map((m, i) => {
+                            const isMe = m.from === user.username;
+                            return (
+                                <div key={i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                    <span className="text-[9px] text-gray-500 mb-1">{m.time}</span>
+                                    <div className={`px-3 py-2 rounded-lg max-w-[85%] break-words ${isMe ? 'bg-brand-cyan/20 border border-brand-cyan/30 text-white' : 'bg-black/60 border border-gray-700 text-gray-300'}`}>{m.text}</div>
+                                </div>
+                            )
+                        })}
+                        <div ref={endRef} />
+                    </div>
+                    <div className="p-3 border-t border-white/10 bg-black/60 rounded-b-2xl">
+                        <div className="flex items-center gap-2 bg-black/80 border border-gray-700 rounded-lg p-2 focus-within:border-brand-cyan transition shadow-[inset_0_0_5px_rgba(0,0,0,0.5)]">
+                            <input type="text" className="bg-transparent text-sm w-full outline-none font-mono text-gray-200" placeholder="Message..." value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key==='Enter' && sendPM()} />
+                            <button onClick={sendPM} className="text-brand-cyan hover:text-white transition"><IconSend /></button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const TransferModal = ({ friendName, user, onClose, t }) => {
+            const [amount, setAmount] = useState('');
+            const [err, setErr] = useState('');
+            
+            const handleTransfer = () => {
+                socket.emit('transfer_cr', { targetName: friendName, amount }, (res) => {
+                    if(res.err) setErr(res.err);
+                    else { playSFX('heal'); onClose(); }
+                });
+            };
+
+            return (
+                <div className="fixed inset-0 z-[250] bg-black/80 flex items-center justify-center animate-fade-in">
+                    <div className="glass-panel-heavy p-6 rounded-2xl w-[320px] max-w-[90vw] flex flex-col gap-4 border border-brand-gold/50 shadow-[0_0_30px_rgba(255,215,0,0.2)] modal-responsive">
+                        <h3 className="text-lg font-bold text-brand-gold tracking-widest flex items-center gap-2"><IconGift/> {t.soc_transfer}</h3>
+                        <p className="text-xs text-gray-400 font-mono">To: <span className="text-white">{friendName}</span></p>
+                        {err && <div className="text-xs text-red-500 bg-red-500/10 p-2 rounded border border-red-500/30">{err}</div>}
+                        <input type="number" placeholder="Amount (CR)..." value={amount} onChange={e=>setAmount(e.target.value)} className="bg-black/50 border border-brand-gold/30 rounded px-3 py-2 outline-none focus:border-brand-gold font-mono text-brand-gold" />
+                        <div className="text-xs text-gray-500 font-mono">Cost: {amount ? Math.ceil(parseInt(amount)*1.1) : 0} CR (-10% Tax)</div>
+                        <div className="flex gap-2 mt-2">
+                            <button onClick={onClose} className="flex-1 py-2 bg-white/5 rounded hover:bg-white/10 text-xs font-mono">Cancel</button>
+                            <button onClick={handleTransfer} className="flex-1 py-2 bg-brand-gold text-black font-bold rounded hover:bg-yellow-400 text-xs tracking-widest shadow-[0_0_10px_rgba(255,215,0,0.4)]">Transfer</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 1. Login ---
+        const LoginScreen = ({ onLogin, lang, setLang }) => {
+            const [username, setUsername] = useState(''); const [password, setPassword] = useState('');
+            const [isRegisterMode, setIsRegisterMode] = useState(false); const [loading, setLoading] = useState(false); const [error, setError] = useState('');
+            const t = I18N[lang];
+            
+            const handleAuth = async () => {
+                setError(''); if (!username.trim() || !password.trim()) { playSFX('error'); setError(t.err_empty); return; }
+                setLoading(true);
+                try {
+                    ensureAudioContext(); 
+                    const endpoint = isRegisterMode ? '/api/register' : '/api/login';
+                    const res = await fetch(SERVER_URL + endpoint, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+
+                    // 验证成功后，注册 Socket ID
+                    socket.emit('authenticate', data.user.username);
+                    
+                    localStorage.setItem('tactical_user_cache', JSON.stringify(data.user));
+                    localStorage.setItem('tactical_sfx', data.user.settings.sfx ? 'on' : 'off');
+                    if(data.user.settings.bgm) setTimeout(()=>toggleBGM(true), 200);
+                    playSFX('select'); onLogin(data.user);
+                } catch (err) { playSFX('error'); setError(err.message); } finally { setLoading(false); }
+            };
+
+            return (
+                <div className="flex flex-col items-center justify-center min-h-screen z-10 relative p-4">
+                    <button onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')} className="absolute top-6 right-6 glass-panel px-4 py-2 rounded-full text-xs font-mono flex gap-2 items-center hover:text-brand-cyan transition"><IconGlobe/> {lang === 'zh' ? 'EN' : '中'}</button>
+                    <div className="mb-8 md:mb-12 text-center relative">
+                        <div className="inline-block px-3 py-1 mb-4 rounded-full border border-brand-cyan/30 text-brand-cyan text-xs font-mono font-bold tracking-widest bg-brand-cyan/10">v17.0 Full Core Protocol</div>
+                        <h1 className="text-4xl md:text-6xl font-black mb-4 tracking-tight"><span className="text-gradient">{t.login_title}</span></h1>
+                        <p className="text-gray-400 max-w-xl mx-auto text-sm md:text-lg font-mono">{t.login_sub}</p>
+                    </div>
+                    <div className="glass-panel p-6 md:p-8 rounded-2xl w-full max-w-md flex flex-col gap-5">
+                        {error && <div className="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-2 rounded text-sm font-mono text-center animate-shake">{error}</div>}
+                        <input type="text" className="w-full bg-black/50 border border-brand-cyan/20 rounded-lg px-4 py-4 text-white focus:outline-none focus:border-brand-cyan transition font-mono shadow-[inset_0_0_10px_rgba(0,240,255,0.05)]" placeholder={t.login_ph} value={username} onChange={e => setUsername(e.target.value)} />
+                        <input type="password" className="w-full bg-black/50 border border-brand-cyan/20 rounded-lg px-4 py-4 text-white focus:outline-none focus:border-brand-cyan transition font-mono shadow-[inset_0_0_10px_rgba(0,240,255,0.05)]" placeholder={t.login_pass} value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAuth()} />
+                        <button onClick={handleAuth} disabled={loading} className="cyber-btn mt-2 w-full bg-brand-cyan hover:bg-[#00d0e0] text-black font-black tracking-widest py-4 shadow-[0_0_20px_rgba(0,240,255,0.4)] transition transform active:scale-95 flex justify-center gap-2 disabled:opacity-50">
+                            {loading ? <span className="animate-pulse">PROCESSING...</span> : <><IconUser /> {isRegisterMode ? t.login_reg : t.login_btn}</>}
+                        </button>
+                        <button onClick={() => {setIsRegisterMode(!isRegisterMode); setError('');}} className="text-gray-500 hover:text-brand-cyan text-sm font-mono mt-2 transition">{isRegisterMode ? t.login_toggle_log : t.login_toggle_reg}</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const WarpScreen = ({ user, onClose, lang }) => {
+            const t = I18N[lang];
+            const containerRef = useRef(null);
+            const [step, setStep] = useState('menu'); 
+            const [pullCount, setPullCount] = useState(1);
+            const [drops, setDrops] = useState([]);
+            const [revealIdx, setRevealIdx] = useState(0);
+            const [flipped, setFlipped] = useState(false);
+            const [isFlipping, setIsFlipping] = useState(false);
+            
+            const threeState = useRef({ scene:null, camera:null, renderer:null, reqId:null, raycaster:new THREE.Raycaster(), mouse:new THREE.Vector2(), hitboxes:[], burstingGroup:null, burstStart:0 });
+            const stepRef = useRef(step); useEffect(() => { stepRef.current = step; }, [step]);
+            const maxRarityRef = useRef(3);
+
+            const doPull = (count) => {
+                socket.emit('gacha_pull', count, (res) => {
+                    if (res.err) return playSFX('error');
+                    maxRarityRef.current = Math.max(...res.drops.map(r=>r.rarity));
+                    setPullCount(count); setDrops(res.drops); setStep('sky'); playSFX('select');
+                });
+            };
+
+            useEffect(() => {
+                if(!containerRef.current || step !== 'sky') return;
+                containerRef.current.innerHTML = '';
+                
+                const w = window.innerWidth; const h = window.innerHeight;
+                const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x000000, 0.0015);
+                const camera = new THREE.PerspectiveCamera(75, w/h, 0.1, 2500);
+                const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                renderer.setSize(w, h); containerRef.current.appendChild(renderer.domElement);
+                
+                const circleTex = createCircleTexture();
+                const geo = new THREE.BufferGeometry(); const pos = [];
+                for(let i=0; i<1000; i++){ pos.push((Math.random()-0.5)*2000, (Math.random()-0.5)*2000, (Math.random()-0.5)*2000); }
+                geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+                const mat = new THREE.PointsMaterial({ size: 6, map: circleTex, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending });
+                const starSys = new THREE.Points(geo, mat); scene.add(starSys);
+
+                const constelNames = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
+                const hitboxes = [];
+
+                for(let i=0; i<12; i++) {
+                    const group = new THREE.Group();
+                    const phi = Math.acos(-1 + (2*i)/12); const theta = Math.sqrt(12*Math.PI)*phi;
+                    const r = 600; const cx = r * Math.cos(theta) * Math.sin(phi); const cy = r * Math.sin(theta) * Math.sin(phi); const cz = r * Math.cos(phi);
+                    group.position.set(cx, cy, cz); group.lookAt(0,0,0);
+
+                    const numStars = 3 + Math.floor(Math.random()*3); const starPoints = [];
+                    for(let j=0; j<numStars; j++) {
+                        const sx = (Math.random()-0.5)*120; const sy = (Math.random()-0.5)*120; const sz = (Math.random()-0.5)*20;
+                        starPoints.push(new THREE.Vector3(sx, sy, sz));
+                        const sMat = new THREE.SpriteMaterial({ map: circleTex, color: 0x00f0ff, transparent: true, blending: THREE.AdditiveBlending });
+                        const sprite = new THREE.Sprite(sMat); sprite.position.set(sx, sy, sz); sprite.scale.set(15, 15, 1);
+                        group.add(sprite);
+                    }
+
+                    const lineGeo = new THREE.BufferGeometry().setFromPoints(starPoints);
+                    const lineMat = new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.5 });
+                    const line = new THREE.Line(lineGeo, lineMat); group.add(line);
+                    const nameSprite = createTextSprite(constelNames[i]); nameSprite.position.set(0, -70, 0); group.add(nameSprite);
+
+                    const boxGeo = new THREE.BoxGeometry(180, 180, 50); const boxMat = new THREE.MeshBasicMaterial({visible: false});
+                    const hitbox = new THREE.Mesh(boxGeo, boxMat); group.add(hitbox); hitboxes.push(hitbox);
+                    hitbox.userData = { parentGroup: group }; scene.add(group);
+                }
+
+                let lon = 0, lat = 0, isDragging = false, startX, startY, startLon, startLat;
+
+                const onDown = (e) => { 
+                    if(stepRef.current!=='sky') return; 
+                    isDragging = true; 
+                    startX = e.clientX || (e.touches && e.touches[0].clientX); 
+                    startY = e.clientY || (e.touches && e.touches[0].clientY); 
+                    startLon = lon; startLat = lat; 
+                };
+                const onMove = (e) => { 
+                    const cx = e.clientX || (e.touches && e.touches[0].clientX);
+                    const cy = e.clientY || (e.touches && e.touches[0].clientY);
+                    threeState.current.mouse.x = (cx/w)*2-1; threeState.current.mouse.y = -(cy/h)*2+1; 
+                    if(isDragging){ lon = (startX - cx)*0.15 + startLon; lat = (cy - startY)*0.15 + startLat; } 
+                };
+                const onUp = (e) => {
+                    isDragging = false; if(stepRef.current!=='sky' || threeState.current.burstingGroup) return;
+                    const cx = e.clientX || (e.changedTouches && e.changedTouches[0].clientX);
+                    const cy = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
+                    if(Math.abs(cx - startX) < 10 && Math.abs(cy - startY) < 10){
+                        threeState.current.raycaster.setFromCamera(threeState.current.mouse, camera);
+                        const intersects = threeState.current.raycaster.intersectObjects(hitboxes);
+                        if(intersects.length > 0){
+                            if(threeState.current.burstingGroup) {
+                                threeState.current.burstingGroup.scale.set(1,1,1);
+                                threeState.current.burstingGroup.children.forEach(c => { if(c.material && c.material.color) c.material.color.setHex(0x00f0ff); });
+                            }
+                            threeState.current.burstingGroup = intersects[0].object.userData.parentGroup;
+                            threeState.current.burstStart = Date.now();
+                            playSFX('select');
+                            
+                            setTimeout(() => { 
+                                setStep('reveal'); setRevealIdx(0); setFlipped(false); setIsFlipping(false);
+                            }, 1500);
+                        }
+                    }
+                };
+
+                window.addEventListener('mousedown', onDown); window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+                window.addEventListener('touchstart', onDown); window.addEventListener('touchmove', onMove); window.addEventListener('touchend', onUp);
+
+                const animate = () => {
+                    lat = Math.max(-85, Math.min(85, lat));
+                    const phi = THREE.MathUtils.degToRad(90 - lat); const theta = THREE.MathUtils.degToRad(lon);
+                    camera.target = new THREE.Vector3( 500*Math.sin(phi)*Math.cos(theta), 500*Math.cos(phi), 500*Math.sin(phi)*Math.sin(theta) );
+                    camera.lookAt(camera.target);
+
+                    if (threeState.current.burstingGroup) {
+                        const elapsed = Date.now() - threeState.current.burstStart; const prog = Math.min(elapsed / 1500, 1);
+                        const scale = 1 + Math.sin(prog * Math.PI) * 0.3; // Gentle pulse
+                        threeState.current.burstingGroup.scale.set(scale, scale, scale);
+                        
+                        const maxR = maxRarityRef.current;
+                        const cHex = maxR === 5 ? 0xffd700 : maxR === 4 ? 0x8a2be2 : 0x00f0ff;
+                        threeState.current.burstingGroup.children.forEach(c => { if(c.material && c.material.color) c.material.color.setHex(cHex); });
+                    }
+
+                    renderer.render(scene, camera);
+                    threeState.current.reqId = requestAnimationFrame(animate);
+                };
+                animate();
+                threeState.current.renderer = renderer;
+
+                return () => {
+                    cancelAnimationFrame(threeState.current.reqId);
+                    window.removeEventListener('mousedown', onDown); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
+                    window.removeEventListener('touchstart', onDown); window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
+                    if(threeState.current.renderer) threeState.current.renderer.dispose();
+                    if(containerRef.current) containerRef.current.innerHTML = '';
+                    threeState.current.burstingGroup = null; 
+                };
+            }, [step]);
+
+            const handleCardClick = () => {
+                if (step !== 'reveal' || isFlipping) return;
+                if (!flipped) {
+                    setIsFlipping(true); setFlipped(true); playSFX('gacha_flip');
+                    if(drops[revealIdx].rarity === 5) setTimeout(()=>playSFX('gacha_5star'), 300);
+                    setTimeout(() => setIsFlipping(false), 600);
+                } else {
+                    if (revealIdx < drops.length - 1) { 
+                        setIsFlipping(true); setFlipped(false); 
+                        setTimeout(() => setRevealIdx(prev => prev + 1), 300);
+                        setTimeout(() => setIsFlipping(false), 600); 
+                    } 
+                    else { setStep('summary'); playSFX('select'); }
+                }
+            };
+
+            const getRarityColor = (r) => r===5 ? '#ffd700' : r===4 ? '#8a2be2' : '#00f0ff';
+            const getRarityName = (r) => r===5 ? 'LEGENDARY' : r===4 ? 'EPIC' : 'RARE';
+
+            return (
+                <div className="fixed inset-0 z-[100] bg-black font-sans text-white">
+                    <div ref={containerRef} className={`absolute inset-0 ${step === 'sky' ? 'cursor-move z-10' : 'hidden z-0'}`}></div>
+                    
+                    {step === 'sky' && <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 font-mono text-brand-cyan tracking-widest animate-pulse pointer-events-none bg-black/50 px-6 py-2 rounded-full border border-brand-cyan/30 z-20 shadow-[0_0_15px_#00f0ff]">{t.warp_click_star}</div>}
+
+                    {step === 'menu' && (
+                        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center animate-fade-in z-20 overflow-y-auto">
+                            <div className="absolute top-4 right-4 md:top-8 md:right-8 text-brand-gold font-mono font-bold flex items-center gap-2"><IconCart/> {user.economy.credits} CR</div>
+                            <button onClick={onClose} className="absolute top-4 left-4 md:top-8 md:left-8 text-gray-400 hover:text-white text-3xl">&times;</button>
+                            <h1 className="text-3xl md:text-5xl font-black text-brand-cyan tracking-[0.2em] mb-4 drop-shadow-[0_0_20px_rgba(0,240,255,0.5)] text-center">{t.warp_title}</h1>
+                            <p className="text-gray-400 font-mono mb-12 text-center text-sm px-4">{t.warp_desc}</p>
+                            <div className="flex flex-col md:flex-row gap-8 items-center w-full px-4 justify-center">
+                                <button onClick={()=>doPull(1)} className="glass-panel p-6 md:p-8 rounded-2xl flex flex-col items-center gap-4 hover:border-brand-cyan/50 hover:bg-brand-cyan/5 transition group w-full md:w-64 max-w-[250px]">
+                                    <IconStar className="w-10 h-10 md:w-12 md:h-12 text-brand-cyan group-hover:scale-110 transition" />
+                                    <span className="font-bold tracking-widest">{t.warp_1}</span>
+                                </button>
+                                <button onClick={()=>doPull(10)} className="glass-panel p-6 md:p-8 rounded-2xl flex flex-col items-center gap-4 border-brand-purple/30 hover:border-brand-purple hover:bg-brand-purple/10 transition group w-full md:w-64 max-w-[250px] shadow-[0_0_30px_rgba(138,43,226,0.2)]">
+                                    <div className="flex gap-1"><IconStar className="w-6 h-6 md:w-8 md:h-8 text-brand-purple group-hover:scale-125 transition delay-75"/><IconStar className="w-10 h-10 md:w-12 md:h-12 text-brand-pink group-hover:scale-125 transition"/><IconStar className="w-6 h-6 md:w-8 md:h-8 text-brand-purple group-hover:scale-125 transition delay-75"/></div>
+                                    <span className="font-bold tracking-widest text-brand-pink">{t.warp_10}</span>
+                                </button>
+                            </div>
+                            <div className="mt-12 text-xs font-mono text-gray-500">{t.warp_pity} <span className="text-brand-gold">{Math.max(0, 50 - (user.gacha?.p5||0))}</span></div>
+                        </div>
+                    )}
+
+                    {step === 'reveal' && (
+                        <div className="absolute inset-0 bg-transparent flex flex-col items-center justify-center z-30" onClick={handleCardClick}>
+                            <div className="absolute inset-0 bg-black/80 backdrop-blur-md pointer-events-none"></div>
+                            {drops.length > 1 && (<button onClick={(e) => { e.stopPropagation(); setStep('summary'); playSFX('select'); }} className="absolute top-4 right-4 md:top-8 md:right-8 cyber-btn bg-white/10 border border-white/20 text-white font-bold px-4 py-2 hover:bg-white/20 transition tracking-widest z-[60]">{t.warp_skip}</button>)}
+
+                            <div className={`tarot-card ${flipped ? 'flipped' : ''} z-40`}>
+                                <div className="tarot-inner">
+                                    <div className="tarot-back"><IconStar className="w-16 h-16 text-brand-cyan opacity-50" /></div>
+                                    <div className="tarot-front flex-col gap-6" style={{ borderColor: getRarityColor(drops[revealIdx].rarity), boxShadow: `0 0 30px ${getRarityColor(drops[revealIdx].rarity)}40, inset 0 0 20px ${getRarityColor(drops[revealIdx].rarity)}20` }}>
+                                        <div className="text-xs font-mono font-bold tracking-widest" style={{color: getRarityColor(drops[revealIdx].rarity)}}>{getRarityName(drops[revealIdx].rarity)}</div>
+                                        <div className="text-6xl">{drops[revealIdx].type==='title'?'🏷️':drops[revealIdx].type==='bg'?'🌌':drops[revealIdx].type==='frame'?'🖼️':drops[revealIdx].type==='ring'?'⭕':drops[revealIdx].type==='chip'?'💠':drops[revealIdx].val}</div>
+                                        <div className="font-bold tracking-widest text-center px-4" style={{color: drops[revealIdx].type==='title'?drops[revealIdx].c:'white', textShadow: drops[revealIdx].type==='title'?`0 0 10px ${drops[revealIdx].c}`:'none'}}>{drops[revealIdx].n}</div>
+                                        <div className="text-[10px] text-gray-400 mt-2 px-6 text-center leading-tight break-words" style={{whiteSpace: 'pre-wrap'}}>{drops[revealIdx].desc}</div>
+                                        {drops[revealIdx].isDup && <div className="text-[10px] font-mono bg-white/10 px-2 py-1 rounded text-gray-300">DUPLICATE -> REFUNDED</div>}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="absolute bottom-10 font-mono text-gray-500 animate-pulse z-40">{t.warp_tap_reveal} ({revealIdx+1}/{drops.length})</div>
+                        </div>
+                    )}
+
+                    {step === 'summary' && (
+                        <div className="absolute inset-0 bg-black/90 backdrop-blur-xl flex flex-col items-center justify-start md:justify-center p-4 md:p-8 animate-fade-in z-30 overflow-y-auto overflow-x-hidden">
+                            <h2 className="text-2xl md:text-3xl font-black text-brand-cyan tracking-widest mb-6 md:mb-10 mt-10 md:mt-0">{t.warp_summary}</h2>
+                            <div className={drops.length > 1 ? "grid grid-cols-2 md:grid-cols-5 gap-4 max-w-4xl mx-auto pb-20" : "flex justify-center pb-20"}>
+                                {drops.map((item, i) => {
+                                    const c = getRarityColor(item.rarity);
+                                    return (
+                                        <div key={i} className="glass-panel p-4 rounded-xl flex flex-col items-center justify-center w-full md:w-36 h-40 md:h-48 relative overflow-hidden" style={{borderColor: c}}>
+                                            <div className="absolute inset-0 opacity-10" style={{backgroundColor: c}}></div>
+                                            <div className="text-3xl mb-2 relative z-10">{item.type==='title'?'🏷️':item.type==='bg'?'🌌':item.type==='frame'?'🖼️':item.type==='ring'?'⭕':item.type==='chip'?'💠':item.val}</div>
+                                            <div className="text-xs font-bold text-center relative z-10" style={{color: item.type==='title'?item.c:'white'}}>{item.n}</div>
+                                            {item.isDup && <div className="absolute bottom-2 text-[8px] font-mono text-brand-gold">REFUNDED</div>}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                            <button onClick={() => setStep('menu')} className="fixed md:static bottom-6 cyber-btn bg-brand-cyan text-black font-black px-12 py-3 hover:bg-white transition tracking-widest z-50">OK</button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const ModulesScreen = ({ user, onClose, lang }) => {
+            const t = I18N[lang];
+            const [selectedChip, setSelectedChip] = useState(user.settings?.chip || '');
+            const unl = user.economy?.unlocks || [];
+            const unlockedChips = [...LOOT_POOLS[4], ...LOOT_POOLS[5]].filter(i=>i.type==='chip' && unl.includes(i.id));
+
+            const saveModule = () => {
+                socket.emit('update_settings', { chip: selectedChip }, null, null, () => {
+                    playSFX('heal'); onClose();
+                });
+            };
+
+            const chipData = unlockedChips.find(c => c.id === selectedChip);
+
+            return (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md">
+                    <div className="glass-panel-heavy p-4 md:p-8 rounded-3xl modal-responsive animate-float-up" style={{ animation: 'none', transform: 'none' }}>
+                        <div className="flex justify-between items-center border-b border-brand-cyan/30 pb-4 shrink-0">
+                            <h2 className="text-xl md:text-3xl font-black text-brand-cyan tracking-widest flex items-center gap-3"><IconCpu/> {t.mod_title}</h2>
+                            <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl">&times;</button>
+                        </div>
+                        <div className="flex flex-col md:flex-row gap-6 mt-4 flex-1">
+                            <div className="w-full md:w-[300px] h-[200px] md:h-auto border border-white/10 rounded-2xl relative overflow-hidden bg-[#030305] shrink-0 flex flex-col shadow-[inset_0_0_50px_rgba(0,0,0,0.8)]">
+                                <div className="absolute inset-0 opacity-20 z-0 pointer-events-none"><BackgroundEngine theme="grid" /></div>
+                                <div className="relative z-10 flex-1 flex flex-col items-center justify-center">
+                                    <div className="scale-100 transform-origin-center relative mt-4">
+                                        <AvatarDisplay avatar={user.settings?.avatar} name={user.username} frame={user.settings?.frame} className="w-[80px] h-[80px] md:w-[100px] md:h-[100px] rounded-full border-[3px] border-brand-cyan shadow-[0_0_30px_#00f0ff]" />
+                                        {selectedChip && <div className="absolute -bottom-4 -left-4 w-10 h-10 md:w-12 md:h-12 module-slot text-xl md:text-2xl animate-pulse bg-black rounded flex items-center justify-center border border-brand-cyan">{chipData?.icon}</div>}
+                                    </div>
+                                    <div className="mt-8 mb-4 text-center px-4">
+                                        <div className="font-bold text-brand-cyan tracking-widest text-sm md:text-base">{chipData ? chipData.n : '未装备模块'}</div>
+                                        <div className="text-[10px] md:text-xs font-mono text-gray-400 mt-2">{chipData ? chipData.desc : '你的底层逻辑未被篡改。'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex-1 flex flex-col gap-3 md:gap-4 overflow-y-visible md:overflow-y-auto hide-scroll pb-4">
+                                <div className="text-xs md:text-sm font-mono text-gray-400">{t.mod_desc}</div>
+                                <button onClick={()=>setSelectedChip('')} className={`p-3 md:p-4 rounded-xl text-left transition border ${selectedChip==='' ? 'bg-brand-cyan/20 border-brand-cyan text-white shadow-[0_0_10px_#00f0ff]' : 'bg-black/60 border-gray-700 text-gray-400 hover:border-brand-cyan/50'}`}>
+                                    <div className="font-bold tracking-widest text-sm">无芯片卸载</div>
+                                </button>
+                                {unlockedChips.map(c => (
+                                    <button key={c.id} onClick={()=>setSelectedChip(c.id)} className={`p-3 md:p-4 rounded-xl text-left transition border flex items-center gap-3 md:gap-4 ${selectedChip===c.id ? 'bg-brand-cyan/20 border-brand-cyan text-white shadow-[0_0_10px_#00f0ff]' : 'bg-black/60 border-gray-700 text-gray-400 hover:border-brand-cyan/50'}`}>
+                                        <div className="w-10 h-10 md:w-12 md:h-12 module-slot text-xl md:text-2xl shrink-0 border border-white/10 rounded flex items-center justify-center bg-black/50">{c.icon}</div>
+                                        <div className="flex-1"><div className="font-bold tracking-widest text-brand-cyan text-sm">{c.n}</div><div className="text-[10px] md:text-xs font-mono mt-1 opacity-80 leading-tight">{c.desc}</div></div>
+                                        {user.settings?.chip === c.id && <div className="text-[10px] md:text-xs font-bold text-green-400 border border-green-500/50 px-2 py-1 rounded bg-green-500/10 whitespace-nowrap">{t.mod_equipped}</div>}
+                                    </button>
+                                ))}
+                                {unlockedChips.length === 0 && <div className="text-center text-gray-600 font-mono mt-10 text-sm">{t.mod_empty}</div>}
+                            </div>
+                        </div>
+                        <div className="flex justify-end pt-4 border-t border-white/10 shrink-0 mt-4">
+                            <button onClick={saveModule} className="cyber-btn w-full md:w-auto bg-brand-cyan text-black font-black px-12 py-3 hover:bg-white transition tracking-widest">{t.mod_equip}</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const LobbyScreen = ({ user, onJoinRoom, onLogout, lang, setLang }) => {
+            const t = I18N[lang];
+            const [rooms, setRooms] = useState([]);
+            const [showCreateModal, setShowCreateModal] = useState(false); const [createSettings, setCreateSettings] = useState({ max: 2, hp: 10 });
+            const [showProfile, setShowProfile] = useState(false); const [showSettings, setShowSettings] = useState(false); const [settingsTab, setSettingsTab] = useState('basic');
+            const [showMarket, setShowMarket] = useState(false); const [marketCat, setMarketCat] = useState('frame'); const [showDB, setShowDB] = useState(false);
+            const [showWarp, setShowWarp] = useState(false); const [showMods, setShowMods] = useState(false);
+            const [activeAccordion, setActiveAccordion] = useState('quests');
+            
+            const [editAvatar, setEditAvatar] = useState(user.settings?.avatar || ''); const [editBg, setEditBg] = useState(user.settings?.bgTheme || 'stars');
+            const [editFrame, setEditFrame] = useState(user.settings?.frame || 'frame_default'); const [editCard, setEditCard] = useState(user.settings?.cardSkin || 'card_default');
+            const [editTitle, setEditTitle] = useState(user.settings?.title || ''); const [editRing, setEditRing] = useState(user.settings?.ring || 'ring_default');
+            const [editSfx, setEditSfx] = useState(user.settings?.sfx ?? true); const [editBgm, setEditBgm] = useState(user.settings?.bgm ?? false);
+            const [editSignature, setEditSignature] = useState(user.settings?.signature || '');
+            const [oldPass, setOldPass] = useState(''); const [newPass, setNewPass] = useState(''); const [setMsg, setSetMsg] = useState({ text: '', type: '' });
+
+            const [previewBg, setPreviewBg] = useState(user.settings?.bgTheme || 'stars');
+            const [previewFrame, setPreviewFrame] = useState(user.settings?.frame || 'frame_default');
+            const [previewCard, setPreviewCard] = useState(user.settings?.cardSkin || 'card_default');
+
+            const [selectedProfileTarget, setSelectedProfileTarget] = useState(null);
+            const [pmTarget, setPmTarget] = useState(null);
+            const [transferTarget, setTransferTarget] = useState(null);
+            const [expandedFriendMenu, setExpandedFriendMenu] = useState(null);
+
+            // 连接 Socket 监听大厅房间
+            useEffect(() => {
+                socket.on('lobby_rooms_update', (updatedRooms) => { setRooms(updatedRooms); });
+                return () => { socket.off('lobby_rooms_update'); }
+            }, []);
+
+            const confirmCreate = () => { 
+                socket.emit('create_room', { user, max: createSettings.max, hp: createSettings.hp });
+                setShowCreateModal(false); 
+            };
+            
+            const handleImageUpload = (e) => {
+                const file = e.target.files[0]; if(!file) return; const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image(); img.onload = () => {
+                        const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); canvas.width = 120; canvas.height = 120;
+                        const size = Math.min(img.width, img.height); const sx = (img.width - size)/2; const sy = (img.height - size)/2;
+                        ctx.drawImage(img, sx, sy, size, size, 0, 0, 120, 120); setEditAvatar(canvas.toDataURL('image/jpeg', 0.8));
+                    }; img.src = ev.target.result;
+                }; reader.readAsDataURL(file);
+            };
+
+            const saveSettings = () => {
+                const newSettings = { avatar: editAvatar, bgTheme: editBg, frame: editFrame, cardSkin: editCard, title: editTitle, ring: editRing, sfx: editSfx, bgm: editBgm, signature: editSignature.slice(0,20) };
+                socket.emit('update_settings', newSettings, newPass, oldPass, (res) => {
+                    if (res.err) { setSetMsg({text: res.err, type: 'err'}); return; }
+                    localStorage.setItem('tactical_sfx', editSfx ? 'on' : 'off');
+                    ensureAudioContext(); toggleBGM(editBgm); 
+                    setSetMsg({text: 'Protocol Saved.', type: 'suc'});
+                    setTimeout(() => { setSetMsg({text:'', type:''}); setShowSettings(false); setOldPass(''); setNewPass(''); }, 1000);
+                });
+            };
+
+            const buyItem = (itemId, cost) => { socket.emit('buy_item', itemId, cost); playSFX('select'); };
+            const acceptReq = (reqName) => { socket.emit('accept_friend_req', reqName); playSFX('heal'); };
+            const removeFriend = (fName) => { socket.emit('remove_friend', fName); setExpandedFriendMenu(null); };
+
+            const acceptInvite = (roomId, fromUser) => {
+                // Optional: tell server to remove invite, but let's just join room
+                socket.emit('join_room', {roomId, user});
+            };
+            const declineInvite = (fromUser) => {
+                // Clear local invite state
+                user.invites = user.invites.filter(inv => inv.from !== fromUser);
+            };
+
+            const handlePreview = (item) => { if(item.type==='bg') setPreviewBg(item.id); if(item.type==='frame') setPreviewFrame(item.id); if(item.type==='card') setPreviewCard(item.id); };
+
+            const marketItems = [ { id:'frame_neon', n:t.frame_neon, c:300, type:'frame', icon:'🖼️' }, { id:'frame_inferno', n:t.frame_inferno, c:500, type:'frame', icon:'🔥' }, { id:'frame_gold', n:t.frame_gold, c:800, type:'frame', icon:'👑' }, { id:'card_matrix', n:t.card_matrix, c:300, type:'card', icon:'💻' }, { id:'card_blood', n:t.card_blood, c:400, type:'card', icon:'🩸' } ];
+            const renderProgress = (val, max) => (<div className="w-full bg-gray-900 h-1.5 rounded-full mt-3 overflow-hidden border border-white/5 relative"><div className="h-full bg-gradient-to-r from-brand-pink to-brand-cyan transition-all duration-700 ease-out" style={{ width: `${Math.min((val/max)*100, 100)}%` }}></div></div>);
+
+            const unl = user.economy?.unlocks || [];
+            const unlockedTitles = [...LOOT_POOLS[3], ...LOOT_POOLS[4], ...LOOT_POOLS[5]].filter(i=>i.type==='title' && unl.includes(i.id));
+            const unlockedRings = [...LOOT_POOLS[5]].filter(i=>i.type==='ring' && unl.includes(i.id));
+            const rank = getRank(user.stats.wins);
+
+            return (
+                <div className="min-h-screen flex flex-col p-4 md:p-8 z-10 relative max-w-7xl mx-auto w-full">
+                    {showWarp && <WarpScreen user={user} onClose={()=>setShowWarp(false)} lang={lang} />}
+                    {showMods && <ModulesScreen user={user} onClose={()=>setShowMods(false)} lang={lang} />}
+                    {selectedProfileTarget && <ProfileModal targetName={selectedProfileTarget} currentUser={user} onClose={()=>setSelectedProfileTarget(null)} t={t} />}
+                    {pmTarget && <PrivateChat friendName={pmTarget} user={user} onClose={()=>setPmTarget(null)} />}
+                    {transferTarget && <TransferModal friendName={transferTarget} user={user} onClose={()=>setTransferTarget(null)} t={t} />}
+                    
+                    {/* Floating Invites */}
+                    <div className="fixed top-24 right-4 md:right-8 flex flex-col gap-2 z-50 pointer-events-none">
+                        {user.invites?.map((inv, i) => (
+                            <div key={i} className="glass-panel-heavy p-4 rounded-xl border border-brand-pink shadow-[0_0_20px_rgba(255,0,127,0.3)] animate-fade-in-up w-56 md:w-64 pointer-events-auto">
+                                <div className="text-xs font-mono text-brand-pink mb-2 font-bold tracking-widest">INCOMING DRAFT</div>
+                                <div className="text-sm font-bold truncate mb-3"><span className="text-brand-cyan">{inv.from}</span> invites you to <span className="text-brand-gold">{inv.roomId}</span></div>
+                                <div className="flex gap-2">
+                                    <button onClick={()=>acceptInvite(inv.roomId, inv.from)} className="flex-1 bg-green-500/20 text-green-400 text-xs py-1.5 rounded font-bold border border-green-500/50 hover:bg-green-500/40 transition">{t.soc_accept}</button>
+                                    <button onClick={()=>declineInvite(inv.from)} className="flex-1 bg-red-500/20 text-red-400 text-xs py-1.5 rounded font-bold border border-red-500/50 hover:bg-red-500/40 transition">{t.soc_decline}</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <header className="flex flex-col md:flex-row justify-between items-center mb-6 md:mb-8 glass-panel px-4 md:px-8 py-4 rounded-2xl relative z-[60] gap-4">
+                        <div className="text-xl md:text-2xl font-black tracking-tighter flex items-center gap-6">
+                            TACTICAL<span className="text-brand-cyan">_ARENA</span>
+                        </div>
+                        <div className="flex flex-wrap justify-center gap-4 items-center">
+                            <button onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')} className="text-xs font-mono border border-gray-600 px-2 py-1 rounded hover:text-brand-cyan">{lang === 'zh' ? 'EN' : '中'}</button>
+                            <div className="flex items-center gap-2">
+                                <div className="bg-black/50 border border-brand-gold/30 px-3 md:px-4 py-1.5 rounded-full font-mono text-xs md:text-sm text-brand-gold flex items-center gap-2 shadow-[0_0_10px_rgba(255,215,0,0.2)]">
+                                    <span className="w-2 h-2 rounded-full bg-brand-gold animate-pulse"></span> {user.economy?.credits || 0} CR
+                                </div>
+                            </div>
+                            <div className="relative">
+                                <button onClick={() => setShowProfile(!showProfile)} className="glass-panel px-3 md:px-4 py-2 rounded-full flex items-center gap-2 md:gap-3 hover:bg-white/10 transition" onContextMenu={e=>{e.preventDefault(); setSelectedProfileTarget(user.username);}}>
+                                    <div className="flex flex-col items-end">
+                                        <div className={`text-[9px] font-bold px-1.5 rounded-sm border ${rank.bg}`} style={{color: rank.c}}>{rank.n}</div>
+                                        <span className="font-mono text-xs md:text-sm font-bold tracking-wider">{user.username}</span>
+                                    </div>
+                                    <AvatarDisplay avatar={user.settings?.avatar} name={user.username} frame={user.settings?.frame} className="w-8 h-8 rounded-full ml-1" />
+                                </button>
+                                {showProfile && (
+                                    <div className="absolute right-0 top-full mt-4 w-56 md:w-64 glass-panel-heavy rounded-xl p-4 md:p-6 z-50 animate-fade-in-up" style={{animationDuration: '0.3s'}}>
+                                        <div className="text-xs font-mono text-brand-purple mb-4 uppercase border-b border-white/10 pb-2 tracking-widest">{t.lobby_dossier}</div>
+                                        <div className="flex justify-between mb-2"><span className="text-gray-400 text-sm">{t.lobby_wins}</span><span className="font-mono text-brand-cyan">{Math.max(0, Math.round((user.stats.wins/Math.max(user.stats.matches,1))*100))||0}%</span></div>
+                                        <div className="flex justify-between mb-6"><span className="text-gray-400 text-sm">{t.lobby_matches}</span><span className="font-mono">{user.stats.matches}</span></div>
+                                        <div className="flex flex-col gap-2">
+                                            <button onClick={() => {setShowSettings(true); setShowProfile(false); setSettingsTab('basic');}} className="w-full text-brand-cyan text-sm flex items-center justify-center gap-2 hover:bg-brand-cyan/20 transition bg-brand-cyan/10 py-3 rounded-lg font-bold tracking-widest border border-brand-cyan/30"><IconSettings /> {t.lobby_settings}</button>
+                                            <button onClick={onLogout} className="w-full text-red-400 text-sm flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white transition bg-red-500/10 py-3 rounded-lg font-bold tracking-widest"><IconLogOut /> {t.lobby_logout}</button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </header>
+
+                    {showSettings && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
+                            <div className="glass-panel-heavy p-4 md:p-8 rounded-3xl modal-responsive animate-float-up" style={{ animation: 'none', transform: 'none' }}>
+                                <div className="flex justify-between items-center border-b border-brand-cyan/30 pb-4 shrink-0">
+                                    <h2 className="text-xl md:text-2xl font-black text-brand-cyan tracking-widest flex items-center gap-2"><IconSettings/> {t.set_title}</h2>
+                                    <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-white text-2xl">&times;</button>
+                                </div>
+                                {setMsg.text && <div className={`p-2 mt-2 text-center text-sm font-mono rounded shrink-0 ${setMsg.type==='err'?'bg-red-500/20 text-red-400':'bg-green-500/20 text-green-400'}`}>{setMsg.text}</div>}
+                                
+                                <div className="flex gap-2 border-b border-white/10 pb-4 shrink-0 mt-4">
+                                    <button onClick={()=>setSettingsTab('basic')} className={`flex-1 py-2 text-xs font-bold font-mono rounded-lg transition ${settingsTab==='basic'?'bg-brand-cyan/20 text-brand-cyan border border-brand-cyan':'bg-white/5 text-gray-400 hover:bg-white/10'}`}>{t.tab_basic}</button>
+                                    <button onClick={()=>setSettingsTab('cosmetics')} className={`flex-1 py-2 text-xs font-bold font-mono rounded-lg transition ${settingsTab==='cosmetics'?'bg-brand-pink/20 text-brand-pink border border-brand-pink':'bg-white/5 text-gray-400 hover:bg-white/10'}`}>{t.tab_cosmetics}</button>
+                                    <button onClick={()=>setSettingsTab('security')} className={`flex-1 py-2 text-xs font-bold font-mono rounded-lg transition ${settingsTab==='security'?'bg-brand-purple/20 text-brand-purple border border-brand-purple':'bg-white/5 text-gray-400 hover:bg-white/10'}`}>{t.tab_security}</button>
+                                </div>
+
+                                <div className="overflow-y-auto hide-scroll flex flex-col gap-6 flex-1 py-4">
+                                    {settingsTab === 'basic' && (
+                                        <>
+                                            <div className="flex flex-col gap-2">
+                                                <label className="text-xs font-mono text-gray-400 tracking-wider">{t.set_avatar}</label>
+                                                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                                                    <AvatarDisplay avatar={editAvatar} name={user.username} frame={editFrame} className="w-16 h-16 rounded-full shrink-0 mx-auto md:mx-0" />
+                                                    <div className="flex flex-wrap gap-2 flex-1 justify-center md:justify-start">
+                                                        {['👽','🤖','💀','💠', ...LOOT_POOLS[3].filter(i=>i.type==='avatar'&&unl.includes(i.id)).map(i=>i.val)].map(em => <button key={em} onClick={()=>setEditAvatar(em)} className={`w-10 h-10 rounded-lg text-2xl bg-white/5 hover:bg-white/20 transition ${editAvatar===em?'border border-brand-cyan':''}`}>{em}</button>)}
+                                                        <label className="w-10 h-10 rounded-lg bg-white/5 hover:bg-brand-pink/50 border border-dashed border-gray-500 flex items-center justify-center cursor-pointer transition text-gray-400 hover:text-white"><IconUpload/><input type="file" accept="image/*" className="hidden" onChange={handleImageUpload}/></label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col gap-2 border-t border-white/10 pt-4">
+                                                <label className="text-xs font-mono text-brand-cyan tracking-wider">{t.set_sig}</label>
+                                                <input type="text" maxLength="20" placeholder="Type here..." value={editSignature} onChange={e=>setEditSignature(e.target.value)} className="bg-black/50 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-brand-cyan outline-none font-mono text-sm w-full" />
+                                            </div>
+                                            <div className="flex items-center justify-between border-t border-white/10 pt-4">
+                                                <label className="text-sm font-mono text-gray-300 tracking-wider">{t.set_sfx}</label>
+                                                <button onClick={()=>setEditSfx(!editSfx)} className={`w-12 h-6 rounded-full transition relative ${editSfx ? 'bg-brand-cyan':'bg-gray-600'}`}><div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${editSfx?'translate-x-6':'translate-x-0.5'}`}></div></button>
+                                            </div>
+                                            <div className="flex items-center justify-between border-t border-white/10 pt-4">
+                                                <label className="text-sm font-mono text-gray-300 tracking-wider">{t.set_bgm}</label>
+                                                <button onClick={()=>setEditBgm(!editBgm)} className={`w-12 h-6 rounded-full transition relative ${editBgm ? 'bg-brand-pink':'bg-gray-600'}`}><div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${editBgm?'translate-x-6':'translate-x-0.5'}`}></div></button>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {settingsTab === 'cosmetics' && (
+                                        <>
+                                            <div className="flex flex-col gap-2">
+                                                <label className="text-xs font-mono text-brand-cyan tracking-wider">{t.cat_bg}</label>
+                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                                    {[ {id:'stars', n:t.bg_stars}, {id:'grid', n:t.bg_grid}, {id:'orbs', n:t.bg_orbs}, {id:'abstract', n:t.bg_abstract}, {id:'chaos', n:t.bg_chaos}, {id:'quantum', n:t.bg_quantum} ].map(bg => {
+                                                        const isUnlocked = user.economy?.unlocks?.includes(bg.id);
+                                                        return (<button key={bg.id} onClick={()=>{if(isUnlocked) setEditBg(bg.id); else playSFX('error');}} className={`py-2 px-1 rounded-lg font-bold text-xs tracking-wider transition border ${!isUnlocked?'opacity-30 cursor-not-allowed border-gray-700 bg-black/50': editBg===bg.id ? 'bg-brand-cyan/20 border-brand-cyan text-brand-cyan shadow-[0_0_10px_rgba(0,240,255,0.3)]' : 'bg-white/5 border-transparent text-gray-400 hover:bg-white/10'}`}>{bg.n} {!isUnlocked && '🔒'}</button>)
+                                                    })}
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex flex-col gap-2 border-t border-white/10 pt-4">
+                                                <label className="text-xs font-mono text-brand-gold tracking-wider">{t.set_title_opt}</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <button onClick={()=>setEditTitle('')} className={`px-3 py-1.5 rounded text-xs border ${editTitle===''?'bg-gray-500/20 border-gray-500':'bg-white/5 border-transparent'}`}>[无]</button>
+                                                    {unlockedTitles.map(tt => (
+                                                        <button key={tt.id} onClick={()=>setEditTitle(tt.n)} className={`px-3 py-1.5 rounded text-xs font-bold transition border ${editTitle===tt.n?'border-current shadow-[0_0_5px_currentColor]':'border-transparent bg-white/5 hover:bg-white/10'}`} style={{color: tt.c}}>{tt.n}</button>
+                                                    ))}
+                                                    {unlockedTitles.length===0 && <span className="text-xs text-gray-600 italic px-2 py-1">前往星空祈愿获取</span>}
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-white/10 pt-4">
+                                                <div className="flex flex-col gap-2">
+                                                    <label className="text-xs font-mono text-brand-pink tracking-wider">{t.cat_frame}</label>
+                                                    <div className="flex flex-col gap-2">
+                                                        {[{id:'frame_default', n:t.frame_default}, {id:'frame_neon', n:t.frame_neon}, {id:'frame_inferno', n:t.frame_inferno}, {id:'frame_gold', n:t.frame_gold}].map(f => {
+                                                            const isUnl = user.economy?.unlocks?.includes(f.id);
+                                                            return <button key={f.id} onClick={()=>{if(isUnl) setEditFrame(f.id); else playSFX('error');}} className={`py-1.5 px-3 text-left rounded text-sm transition border ${!isUnl?'opacity-30 cursor-not-allowed': editFrame===f.id?'bg-brand-pink/20 border-brand-pink text-brand-pink shadow-[0_0_10px_rgba(255,0,127,0.3)]':'bg-white/5 border-transparent text-gray-400 hover:bg-white/10'}`}>{f.n} {!isUnl && '🔒'}</button>
+                                                        })}
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    <label className="text-xs font-mono text-brand-purple tracking-wider">{t.cat_card}</label>
+                                                    <div className="flex flex-col gap-2">
+                                                        {[{id:'card_default', n:t.card_default}, {id:'card_matrix', n:t.card_matrix}, {id:'card_blood', n:t.card_blood}].map(c => {
+                                                            const isUnl = user.economy?.unlocks?.includes(c.id);
+                                                            return <button key={c.id} onClick={()=>{if(isUnl) setEditCard(c.id); else playSFX('error');}} className={`py-1.5 px-3 text-left rounded text-sm transition border ${!isUnl?'opacity-30 cursor-not-allowed': editCard===c.id?'bg-brand-purple/20 border-brand-purple text-brand-purple shadow-[0_0_10px_rgba(138,43,226,0.3)]':'bg-white/5 border-transparent text-gray-400 hover:bg-white/10'}`}>{c.n} {!isUnl && '🔒'}</button>
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col gap-2 border-t border-white/10 pt-4">
+                                                <label className="text-xs font-mono text-brand-cyan tracking-wider">{t.set_ring}</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <button onClick={()=>setEditRing('ring_default')} className={`px-3 py-1.5 rounded text-sm border ${editRing==='ring_default'?'bg-brand-cyan/20 border-brand-cyan text-brand-cyan':'bg-white/5 border-transparent text-gray-400 hover:bg-white/10'}`}>标准指引</button>
+                                                    {unlockedRings.map(rr => (
+                                                        <button key={rr.id} onClick={()=>setEditRing(rr.id)} className={`px-3 py-1.5 rounded text-sm transition border ${editRing===rr.id?'bg-brand-cyan/20 border-brand-cyan text-brand-cyan shadow-[0_0_10px_currentColor]':'bg-white/5 border-transparent text-gray-400 hover:bg-white/10'}`}>{rr.n}</button>
+                                                    ))}
+                                                    {unlockedRings.length===0 && <span className="text-xs text-gray-600 italic px-2 py-1">前往星空祈愿获取</span>}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {settingsTab === 'security' && (
+                                        <div className="flex flex-col gap-3">
+                                            <label className="text-xs font-mono text-brand-purple tracking-wider">{t.set_sec}</label>
+                                            <input type="password" placeholder={t.set_oldp} value={oldPass} onChange={e=>setOldPass(e.target.value)} className="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-brand-purple outline-none font-mono text-sm" />
+                                            <input type="password" placeholder={t.set_newp} value={newPass} onChange={e=>setNewPass(e.target.value)} className="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-brand-purple outline-none font-mono text-sm" />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button onClick={saveSettings} className="cyber-btn shrink-0 mt-4 bg-brand-pink text-white font-black py-4 hover:bg-[#ff3399] transition tracking-widest shadow-[0_0_20px_rgba(255,0,127,0.4)]">{t.set_save}</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {showMarket && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md">
+                            <div className="glass-panel-heavy p-4 md:p-8 rounded-3xl modal-responsive animate-float-up" style={{ animation: 'none', transform: 'none' }}>
+                                <div className="flex justify-between items-center border-b border-brand-gold/30 pb-4 shrink-0">
+                                    <h2 className="text-xl md:text-3xl font-black text-brand-gold tracking-widest flex items-center gap-3"><IconCart/> {t.bm_title}</h2>
+                                    <button onClick={() => setShowMarket(false)} className="text-gray-400 hover:text-white text-3xl">&times;</button>
+                                </div>
+                                
+                                <div className="flex flex-col md:flex-row gap-6 mt-4 flex-1">
+                                    {/* Left Preview Pane */}
+                                    <div className="w-full md:w-[280px] h-[200px] md:h-auto border border-white/10 rounded-2xl relative overflow-hidden bg-[#030305] shrink-0 flex flex-col shadow-[inset_0_0_50px_rgba(0,0,0,0.8)]">
+                                        <div className="absolute inset-0 opacity-40 z-0 pointer-events-none"><BackgroundEngine theme={previewBg} /></div>
+                                        <div className="relative z-10 flex-1 flex flex-col items-center justify-center">
+                                            <div className="text-brand-cyan/70 text-[10px] md:text-xs font-mono mb-6 md:mb-12 uppercase tracking-widest bg-black/50 px-3 py-1 rounded-full border border-brand-cyan/20 backdrop-blur-md">{t.preview}</div>
+                                            <div className="scale-75 md:scale-100 transform-origin-center">
+                                                <div className={`relative flex gap-5 items-center justify-center p-2 rounded-3xl`}>
+                                                    <div className={`holo-slot ${getCardClass(previewCard)} w-[70px] h-[90px] rounded-xl flex flex-col items-center justify-center`}>
+                                                        <span className="text-3xl font-mono font-black drop-shadow-md relative z-10">5</span><span className="absolute bottom-1 opacity-80 text-xl z-10">🗡️</span>
+                                                    </div>
+                                                    <div className={`w-[80px] h-[80px] bg-black/80 rounded-full border-[3px] flex items-center justify-center z-10 overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.9)] relative ${!previewFrame?.startsWith('frame_') ? 'border-brand-cyan' : 'border-transparent'}`}>
+                                                        <AvatarDisplay avatar={user.settings?.avatar} name={user.username} frame={previewFrame} className="w-[85px] h-[85px] rounded-full" />
+                                                    </div>
+                                                    <div className={`holo-slot ${getCardClass(previewCard)} w-[70px] h-[90px] rounded-xl flex flex-col items-center justify-center`}>
+                                                        <span className="text-3xl font-mono font-black drop-shadow-md relative z-10">4</span><span className="absolute bottom-1 opacity-80 text-xl z-10">🛡️</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Right Items Pane */}
+                                    <div className="flex-1 flex flex-col gap-4 overflow-y-auto hide-scroll pb-4">
+                                        <div className="flex justify-between items-center bg-brand-gold/10 p-3 rounded-xl border border-brand-gold/20 shrink-0">
+                                            <span className="font-mono text-brand-gold/70 text-[10px] md:text-sm">{t.bm_desc}</span>
+                                            <span className="font-black text-xl md:text-2xl text-brand-gold tracking-widest">{user.economy?.credits || 0} CR</span>
+                                        </div>
+                                        <div className="flex gap-2 shrink-0">
+                                            <button onClick={()=>setMarketCat('frame')} className={`flex-1 py-2 text-sm font-bold font-mono rounded-lg transition ${marketCat==='frame'?'bg-brand-pink/20 text-brand-pink border border-brand-pink':'bg-white/5 text-gray-400 hover:bg-white/10'}`}>{t.cat_frame}</button>
+                                            <button onClick={()=>setMarketCat('card')} className={`flex-1 py-2 text-sm font-bold font-mono rounded-lg transition ${marketCat==='card'?'bg-brand-purple/20 text-brand-purple border border-brand-purple':'bg-white/5 text-gray-400 hover:bg-white/10'}`}>{t.cat_card}</button>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {marketItems.filter(i=>i.type===marketCat).map(item => {
+                                                const isUnl = user.economy?.unlocks?.includes(item.id);
+                                                return (
+                                                    <div key={item.id} onMouseEnter={()=>handlePreview(item)} className={`bg-black/60 border border-gray-700 p-4 md:p-5 rounded-xl flex flex-col items-center gap-2 md:gap-3 relative overflow-hidden group transition ${!isUnl?'hover:border-brand-gold/50 cursor-pointer':'opacity-50'}`}>
+                                                        <div className="absolute inset-0 bg-brand-gold/5 opacity-0 group-hover:opacity-100 transition pointer-events-none"></div>
+                                                        <div className="text-2xl md:text-3xl pointer-events-none">{item.icon}</div>
+                                                        <div className="text-xs md:text-sm font-bold tracking-widest text-center pointer-events-none">{item.n}</div>
+                                                        {isUnl ? (
+                                                            <button disabled className="w-full py-1.5 bg-green-500/20 text-green-400 font-mono text-[10px] md:text-xs tracking-widest border border-green-500/30 rounded">{t.bm_unlocked}</button>
+                                                        ) : (
+                                                            <button onClick={()=>buyItem(item.id, item.c)} className="w-full py-1.5 cyber-btn bg-brand-gold text-black font-black tracking-widest hover:bg-yellow-400 transition hover:shadow-[0_0_15px_rgba(255,215,0,0.5)] text-[10px] md:text-xs z-10 relative">
+                                                                {t.bm_buy} {item.c} CR
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showDB && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
+                            <div className="glass-panel-heavy p-4 md:p-8 rounded-3xl modal-responsive animate-float-up" style={{ animation: 'none', transform: 'none' }}>
+                                <div className="flex justify-between items-center border-b border-brand-cyan/30 pb-4">
+                                    <h2 className="text-xl md:text-2xl font-black text-brand-cyan tracking-widest flex items-center gap-2"><IconBook/> {t.db_title}</h2>
+                                    <button onClick={() => setShowDB(false)} className="text-gray-400 hover:text-white text-2xl">&times;</button>
+                                </div>
+                                <p className="font-mono text-gray-400 text-xs md:text-sm mt-4">{t.db_desc}</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-4">
+                                    {[3,4,5,6,7,8,9,0].map(num => {
+                                        const w = getWeapons(t)[num];
+                                        return (
+                                            <div key={num} className="bg-black/40 border border-white/10 p-2 md:p-3 rounded-lg flex items-center gap-4 hover:border-brand-cyan/30 transition">
+                                                <div className="w-10 h-10 md:w-12 md:h-12 bg-white/5 rounded flex items-center justify-center text-xl md:text-2xl font-black text-brand-cyan">{num}</div>
+                                                <div>
+                                                    <div className="font-bold text-sm md:text-base flex items-center gap-2">{w.icon} {w.name}</div>
+                                                    <div className="text-[10px] md:text-xs font-mono text-gray-400 mt-0.5 md:mt-1">{w.desc}</div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                                <div className="mt-6 border-t border-brand-purple/30 pt-4 pb-4">
+                                    <div className="text-brand-purple font-mono text-xs md:text-sm tracking-widest mb-3 uppercase">Hidden Protocols (Combos)</div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        <div className="bg-black/40 p-3 rounded-lg border border-brand-purple/20 text-xs md:text-sm"><span className="text-brand-cyan font-bold">4 + 5</span> = {t.c_forge}</div>
+                                        <div className="bg-black/40 p-3 rounded-lg border border-brand-purple/20 text-xs md:text-sm"><span className="text-brand-cyan font-bold">8 + 8</span> = {t.c_power}</div>
+                                        <div className="bg-black/40 p-3 rounded-lg border border-brand-purple/20 text-xs md:text-sm"><span className="text-brand-cyan font-bold">9 + 9</span> = {t.c_heal}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showCreateModal && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
+                            <div className="glass-panel-heavy p-6 md:p-8 rounded-2xl w-[90vw] md:w-[400px] flex flex-col gap-6 animate-float-up" style={{ animation: 'none', transform: 'none' }}>
+                                <h2 className="text-lg md:text-xl font-bold flex items-center gap-2 text-brand-cyan tracking-widest"><IconSettings/> {t.create_title}</h2>
+                                <div>
+                                    <label className="text-xs text-gray-400 mb-2 block uppercase tracking-wider font-mono">{t.create_max}</label>
+                                    <div className="flex gap-3">
+                                        <button className={`cyber-btn flex-1 py-2 md:py-3 font-bold transition text-xs md:text-sm ${createSettings.max===2 ? 'bg-brand-cyan text-black shadow-[0_0_15px_rgba(0,240,255,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`} onClick={()=>setCreateSettings({...createSettings, max:2})}>1 v 1</button>
+                                        <button className={`cyber-btn flex-1 py-2 md:py-3 font-bold transition text-xs md:text-sm ${createSettings.max===4 ? 'bg-brand-purple text-white shadow-[0_0_15px_rgba(138,43,226,0.5)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`} onClick={()=>setCreateSettings({...createSettings, max:4})}>4 Players</button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-400 mb-2 block uppercase tracking-wider font-mono">{t.create_hp}</label>
+                                    <input type="range" min="5" max="20" step="1" value={createSettings.hp} onChange={e=>setCreateSettings({...createSettings, hp: parseInt(e.target.value)})} className="w-full accent-brand-pink" />
+                                    <div className="text-center font-mono mt-2 text-xl md:text-2xl font-black text-brand-pink drop-shadow-[0_0_10px_rgba(255,0,127,0.5)]">{createSettings.hp} HP</div>
+                                </div>
+                                <div className="flex gap-4 mt-4">
+                                    <button className="flex-1 bg-white/5 py-2 md:py-3 rounded-lg hover:bg-white/10 text-gray-400 transition font-mono text-xs md:text-sm" onClick={()=>setShowCreateModal(false)}>{t.create_cancel}</button>
+                                    <button className="cyber-btn flex-[2] bg-brand-cyan text-black font-black py-2 md:py-3 hover:bg-white transition tracking-widest shadow-[0_0_20px_rgba(0,240,255,0.3)] text-xs md:text-sm" onClick={confirmCreate}>{t.create_confirm}</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex flex-col md:flex-row justify-between flex-1 gap-6 md:gap-8 z-10 relative">
+                        {/* 侧边栏 */}
+                        <div className="w-full md:w-80 flex flex-col gap-4">
+                            <div className="grid grid-cols-4 md:grid-cols-2 gap-2 md:gap-3 shrink-0">
+                                <button onClick={() => setShowMarket(true)} className="glass-panel py-3 md:py-5 rounded-xl flex flex-col items-center justify-center hover:bg-brand-gold/10 hover:border-brand-gold/50 transition group">
+                                    <div className="text-brand-gold mb-1 md:mb-2 transform group-hover:scale-125 transition text-lg md:text-2xl"><IconCart /></div>
+                                    <span className="text-[10px] md:text-xs font-bold tracking-widest text-brand-gold">{t.btn_market}</span>
+                                </button>
+                                <button onClick={() => setShowWarp(true)} className="glass-panel py-3 md:py-5 rounded-xl flex flex-col items-center justify-center hover:bg-brand-pink/10 hover:border-brand-pink/50 transition group relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 animate-shimmer pointer-events-none"></div>
+                                    <div className="text-brand-pink mb-1 md:mb-2 relative z-10 transform group-hover:scale-125 transition text-lg md:text-2xl"><IconStar /></div>
+                                    <span className="text-[10px] md:text-xs font-bold tracking-widest text-brand-pink relative z-10">{t.btn_warp}</span>
+                                </button>
+                                <button onClick={() => setShowMods(true)} className="glass-panel py-3 md:py-5 rounded-xl flex flex-col items-center justify-center hover:bg-green-500/10 hover:border-green-500/50 transition group">
+                                    <div className="text-green-500 mb-1 md:mb-2 transform group-hover:scale-125 transition text-lg md:text-2xl"><IconCpu /></div>
+                                    <span className="text-[10px] md:text-xs font-bold tracking-widest text-green-500">{t.btn_modules}</span>
+                                </button>
+                                <button onClick={() => setShowDB(true)} className="glass-panel py-3 md:py-5 rounded-xl flex flex-col items-center justify-center hover:bg-brand-cyan/10 hover:border-brand-cyan/50 transition group">
+                                    <div className="text-brand-cyan mb-1 md:mb-2 transform group-hover:scale-125 transition text-lg md:text-2xl"><IconBook /></div>
+                                    <span className="text-[10px] md:text-xs font-bold tracking-widest text-brand-cyan">{t.btn_db}</span>
+                                </button>
+                            </div>
+                            
+                            {/* Accordions */}
+                            <div className="glass-panel rounded-xl flex-1 flex flex-col overflow-hidden max-h-[40vh] md:max-h-none">
+                                <div className="overflow-y-auto hide-scroll p-2 space-y-2">
+                                    <div className="bg-black/40 rounded-lg overflow-hidden border border-brand-purple/20">
+                                        <div onClick={() => setActiveAccordion(activeAccordion==='quests'?'':'quests')} className="bg-brand-purple/10 px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-brand-purple/20 transition">
+                                            <span className="text-xs font-mono text-brand-purple font-bold tracking-widest">{t.lobby_daily}</span><IconChevronDown className={`text-brand-purple transition-transform ${activeAccordion==='quests'?'rotate-180':''}`}/>
+                                        </div>
+                                        {activeAccordion === 'quests' && (
+                                            <div className="p-3 md:p-4 space-y-3 md:space-y-4">
+                                                <div className="bg-black/60 p-2 md:p-3 rounded-lg border border-gray-800"><div className="text-xs md:text-sm font-bold text-brand-pink tracking-widest">{t.quest1}</div><div className="text-[10px] md:text-xs text-gray-500 font-mono mt-1 flex justify-between"><span>{t.quest1_desc}</span><span className="text-brand-cyan">({user.quests?.kills||0}/3)</span></div>{renderProgress(user.quests?.kills||0, 3)}</div>
+                                                <div className="bg-black/60 p-2 md:p-3 rounded-lg border border-gray-800"><div className="text-xs md:text-sm font-bold text-brand-cyan tracking-widest">{t.quest2}</div><div className="text-[10px] md:text-xs text-gray-500 font-mono mt-1 flex justify-between"><span>{t.quest2_desc}</span><span className="text-brand-cyan">({user.quests?.matches||0}/5)</span></div>{renderProgress(user.quests?.matches||0, 5)}</div>
+                                                <div className="bg-black/60 p-2 md:p-3 rounded-lg border border-gray-800"><div className="text-xs md:text-sm font-bold text-brand-purple tracking-widest">{t.quest3}</div><div className="text-[10px] md:text-xs text-gray-500 font-mono mt-1 flex justify-between"><span>{t.quest3_desc}</span><span className="text-brand-cyan">({user.quests?.dmg||0}/20)</span></div>{renderProgress(user.quests?.dmg||0, 20)}</div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="bg-black/40 rounded-lg overflow-hidden border border-brand-cyan/20">
+                                        <div onClick={() => setActiveAccordion(activeAccordion==='friends'?'':'friends')} className="bg-brand-cyan/10 px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-brand-cyan/20 transition">
+                                            <span className="text-xs font-mono text-brand-cyan font-bold tracking-widest flex items-center gap-2"><IconUsers/> {t.lobby_social} ({user.friends?.length||0})</span><IconChevronDown className={`text-brand-cyan transition-transform ${activeAccordion==='friends'?'rotate-180':''}`}/>
+                                        </div>
+                                        {activeAccordion === 'friends' && (
+                                            <div className="p-2 space-y-2">
+                                                {user.friendRequests?.length > 0 && (
+                                                    <div className="mb-2 pb-2 border-b border-white/10">
+                                                        <div className="text-[10px] text-gray-500 font-mono mb-2">{t.soc_reqs}</div>
+                                                        {user.friendRequests.map((req, i) => (
+                                                            <div key={i} className="flex justify-between items-center bg-black/60 p-2 rounded border border-gray-800">
+                                                                <span className="text-xs font-bold text-gray-300">{req.from}</span>
+                                                                <button onClick={()=>acceptReq(req.from)} className="text-[10px] bg-green-500/20 text-green-400 px-2 py-1 rounded hover:bg-green-500/40">{t.soc_accept}</button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {user.friends?.map((fname) => {
+                                                    // This will be properly mapped now if we had presence via socket
+                                                    // For now, assume offline unless we can fetch it. Let's just show standard UI
+                                                    const stat = 'offline'; 
+                                                    const isExp = expandedFriendMenu === fname;
+                                                    return (
+                                                        <div key={fname} className="bg-black/60 rounded-lg border border-gray-800 overflow-hidden">
+                                                            <div onClick={()=>setExpandedFriendMenu(isExp?null:fname)} className="p-3 flex justify-between items-center cursor-pointer hover:bg-white/5 transition" onContextMenu={e=>{e.preventDefault(); setSelectedProfileTarget(fname);}}>
+                                                                <span className="text-xs md:text-sm font-bold text-gray-200">{fname}</span>
+                                                                {stat === 'playing' || stat === 'in_room' ? <span className="text-[9px] md:text-[10px] text-brand-pink font-mono animate-pulse">{t.soc_status_ingame}</span> : <span className="text-[9px] md:text-[10px] text-green-400 font-mono">{t.soc_status_online}</span>}
+                                                            </div>
+                                                            {isExp && (
+                                                                <div className="grid grid-cols-2 gap-px bg-gray-800 border-t border-gray-800">
+                                                                    <button onClick={()=>setPmTarget(fname)} className="bg-black/80 py-2 text-[10px] text-brand-cyan hover:bg-brand-cyan/20 flex justify-center items-center gap-1 transition"><IconMail className="w-3 h-3"/> PM</button>
+                                                                    <button onClick={()=>setTransferTarget(fname)} className="bg-black/80 py-2 text-[10px] text-brand-gold hover:bg-brand-gold/20 flex justify-center items-center gap-1 transition"><IconGift className="w-3 h-3"/> Transfer</button>
+                                                                    <button onClick={()=>setSelectedProfileTarget(fname)} className="bg-black/80 py-2 text-[10px] text-gray-400 hover:bg-white/10 flex justify-center items-center gap-1 transition col-span-1">Profile</button>
+                                                                    <button onClick={()=>removeFriend(fname)} className="bg-black/80 py-2 text-[10px] text-red-500 hover:bg-red-500/20 flex justify-center items-center gap-1 transition col-span-1">Remove</button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                                {(!user.friends || user.friends.length === 0) && <div className="text-xs text-gray-600 text-center py-4 font-mono">No active links found.</div>}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="bg-black/40 rounded-lg overflow-hidden border border-gray-700/50">
+                                        <div onClick={() => setActiveAccordion(activeAccordion==='recent'?'':'recent')} className="bg-gray-800/30 px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-800/50 transition">
+                                            <span className="text-xs font-mono text-gray-400 font-bold tracking-widest">{t.lobby_recent}</span><IconChevronDown className={`text-gray-400 transition-transform ${activeAccordion==='recent'?'rotate-180':''}`}/>
+                                        </div>
+                                        {activeAccordion === 'recent' && (
+                                            <div className="p-2 space-y-2">
+                                                {user.recentPlayers?.map((rname, i) => (
+                                                    <div key={i} className="p-3 bg-black/60 rounded border border-gray-800 flex justify-between items-center cursor-pointer hover:border-brand-cyan/30 transition" onClick={()=>setSelectedProfileTarget(rname)}>
+                                                        <span className="text-xs font-bold text-gray-300">{rname}</span><span className="text-[9px] text-gray-600 font-mono">PROFILE &gt;</span>
+                                                    </div>
+                                                ))}
+                                                {(!user.recentPlayers || user.recentPlayers.length === 0) && <div className="text-xs text-gray-600 text-center py-4 font-mono">No recent combat data.</div>}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 主大厅：房间列表 */}
+                        <div className="flex-1 flex flex-col gap-4">
+                            <div className="flex justify-between items-center mb-2">
+                                <h2 className="text-lg md:text-xl font-bold tracking-widest">{t.lobby_active}</h2>
+                                <button onClick={() => setShowCreateModal(true)} className="cyber-btn text-xs md:text-sm bg-brand-cyan text-black hover:bg-white font-black px-6 md:px-8 py-2 md:py-3 transition shadow-[0_0_15px_rgba(0,240,255,0.4)] tracking-widest">+ {t.lobby_create}</button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto hide-scroll flex flex-col gap-3 md:gap-4 pb-10">
+                            {rooms.length === 0 ? <div className="text-gray-500 text-center py-20 font-mono text-sm md:text-lg">{t.lobby_empty}</div> : 
+                                rooms.map(room => (
+                                    <div key={room.id} className="glass-panel p-4 md:p-6 rounded-xl flex flex-col md:flex-row justify-between md:items-center hover:border-brand-cyan/50 transition group cursor-pointer gap-4 md:gap-0" onClick={() => {socket.emit('join_room', {roomId: room.id, user});}}>
+                                        <div>
+                                            <div className="text-[10px] md:text-xs font-mono text-brand-cyan mb-1 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-brand-cyan animate-pulse"></span>{room.id} | {room.hp} HP</div>
+                                            <div className="text-lg md:text-xl font-bold group-hover:text-brand-cyan transition truncate">{room.name}</div>
+                                        </div>
+                                        <div className="flex items-center justify-between md:justify-end gap-4 md:gap-6">
+                                            <div className="font-mono bg-black/60 border border-gray-700 px-3 md:px-4 py-1.5 rounded text-sm">{room.players.length}<span className="text-gray-600">/{room.max}</span></div>
+                                            <button className="bg-white/10 group-hover:bg-brand-cyan group-hover:text-black text-white px-6 md:px-8 py-2 rounded-lg font-bold transition tracking-widest text-sm">{t.lobby_join}</button>
+                                        </div>
+                                    </div>
+                                ))
+                            }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 3. Battle Arena (SOCKET REFACTORED) ---
+        const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
+            const t = I18N[lang];
+            const WEAPONS = getWeapons(t);
+
+            const [roomState, setRoomState] = useState(initialRoom);
+            const [gameStarted, setGameStarted] = useState(initialRoom?.status === 'playing');
+            
+            const [selectedOwn, setSelectedOwn] = useState(null); 
+            const [selectedTarget, setSelectedTarget] = useState(null); 
+            const [pendingAction, setPendingAction] = useState(null); 
+            
+            const [activeEmotes, setActiveEmotes] = useState({});
+            const [showEmoteWheel, setShowEmoteWheel] = useState(false);
+            
+            const [logs, setLogs] = useState([{ id: 0, text: t.log_init, type: 'system' }]);
+            const [chatInput, setChatInput] = useState('');
+            const [isChatOpen, setIsChatOpen] = useState(false);
+            const [unreadMsg, setUnreadMsg] = useState(0);
+            
+            const [vfx, setVfx] = useState([]); 
+            const [projectiles, setProjectiles] = useState([]);
+            const [shake, setShake] = useState(false);
+            
+            const [showInviteModal, setShowInviteModal] = useState(false);
+            const [selectedProfileTarget, setSelectedProfileTarget] = useState(null);
+            const [questRewards, setQuestRewards] = useState({base:0, bonus:0}); 
+
+            const logsEndRef = useRef(null);
+            const seatRefs = useRef({});
+
+            useEffect(() => {
+                // 监听所有的房间和对战 Socket 事件
+                const handlers = {
+                    'room_state_update': (room) => {
+                        setRoomState(room);
+                        if(room.status === 'playing') setGameStarted(true);
+                    },
+                    'game_started': (room) => {
+                        setRoomState(room);
+                        setGameStarted(true);
+                    },
+                    'phase_changed': (gameState) => {
+                        setRoomState(prev => prev ? {...prev, gameState} : null);
+                        setSelectedOwn(null);
+                        setSelectedTarget(null);
+                        setPendingAction(null);
+                    },
+                    'math_executed': (data) => {
+                        setRoomState(prev => {
+                            if(!prev || !prev.gameState) return prev;
+                            return {...prev, gameState: {...prev.gameState, players: data.players}};
+                        });
+                    },
+                    'tnt_executed': (data) => {
+                        setRoomState(prev => {
+                            if(!prev || !prev.gameState) return prev;
+                            return {...prev, gameState: {...prev.gameState, players: data.players}};
+                        });
+                        triggerShake();
+                    },
+                    'state_update': (gameState) => {
+                        setRoomState(prev => prev ? {...prev, gameState} : null);
+                    },
+                    'vfx_trigger': (data) => {
+                        triggerVFX(data.type, data.targetId, data.text, data.color);
+                    },
+                    'play_projectile': (data) => {
+                        triggerProjectile(data.attackerId, data.targetId, data.type);
+                    },
+                    'system_log': (log) => {
+                        addLog(log.text, log.type);
+                    },
+                    'chat_message_broadcast': (msg) => {
+                        setLogs(p => [...p, msg]);
+                        if (!isChatOpen) setUnreadMsg(p => p + 1);
+                    },
+                    'game_over_state': (data) => {
+                        setRoomState(prev => {
+                            if(!prev) return prev;
+                            return {...prev, status: 'game_over', gameState: {...prev.gameState, phase: 'GAME_OVER', matchStats: data.stats, players: data.players}};
+                        });
+                    },
+                    'quest_rewards': (rewards) => {
+                        setQuestRewards(rewards);
+                    }
+                };
+
+                Object.keys(handlers).forEach(event => socket.on(event, handlers[event]));
+                
+                return () => {
+                    Object.keys(handlers).forEach(event => socket.off(event, handlers[event]));
+                };
+            }, [isChatOpen]);
+
+            const addBot = () => { socket.emit('add_bot', roomState.id); };
+            const startGame = () => { socket.emit('start_game', roomState.id); };
+            const doLeave = () => { socket.emit('leave_room', roomState.id); onLeave(); };
+
+            const addLog = (text, type = 'info') => { 
+                setLogs(prev => [...prev, { id: Date.now()+Math.random(), text, time: new Date().toLocaleTimeString(), type }]); 
+                if (!isChatOpen) setUnreadMsg(p => p + 1); 
+            };
+            useEffect(() => { logsEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [logs, isChatOpen]);
+
+            const triggerVFX = (type, targetId, text, color) => {
+                const el = seatRefs.current[targetId]; if (!el) return;
+                const rect = el.getBoundingClientRect(); setVfx(prev => [...prev, { id: Date.now()+Math.random(), type, x: rect.left + rect.width/2, y: rect.top + rect.height/2, text, color }]);
+                setTimeout(() => setVfx(prev => prev.slice(1)), 1000);
+            };
+
+            const triggerEmote = (pId, emote) => {
+                const eId = Date.now();
+                setActiveEmotes(prev => ({...prev, [pId]: { e: emote, id: eId }}));
+                playSFX('emote');
+                setTimeout(() => { setActiveEmotes(prev => { if(prev[pId]?.id === eId) { const n={...prev}; delete n[pId]; return n; } return prev; }); }, 2000);
+            };
+
+            const triggerProjectile = (attackerId, targetId, type) => {
+                const el1 = seatRefs.current[attackerId]; const el2 = seatRefs.current[targetId]; if (!el1 || !el2) return;
+                const r1 = el1.getBoundingClientRect(); const r2 = el2.getBoundingClientRect();
+                const x1 = r1.left + r1.width/2; const y1 = r1.top + r1.height/2; const x2 = r2.left + r2.width/2; const y2 = r2.top + r2.height/2;
+                const dx = x2 - x1; const dy = y2 - y1; const angle = Math.atan2(dy, dx) + Math.PI/2;
+                const id = Date.now() + Math.random(); setProjectiles(prev => [...prev, { id, type, x1, y1, dx, dy, angle }]);
+                setTimeout(() => setProjectiles(prev => prev.filter(p => p.id !== id)), 400); 
+            };
+
+            const triggerShake = () => { setShake(true); setTimeout(() => setShake(false), 500); };
+
+            const handleAvatarClick = (pId) => {
+                if (pId === user.id) setShowEmoteWheel(!showEmoteWheel);
+                else {
+                    if (!gameStarted || !roomState?.gameState) return;
+                    const state = roomState.gameState;
+                    if (state.phase === 'GAME_OVER' || state.phase === 'ANIMATING') return;
+                    
+                    const currentPlayer = state.players[state.turnIndex]; 
+                    if (currentPlayer?.id !== user.id || currentPlayer.isDead) return;
+
+                    if (state.phase === 'SELECT_ACTION_TARGET' && pendingAction) {
+                        socket.emit('execute_action', { roomId: roomState.id, userId: user.id, action: pendingAction, targetId: pId });
+                    }
+                    else if (state.phase === 'SELECT_TNT_TARGET') {
+                        socket.emit('execute_tnt', { roomId: roomState.id, userId: user.id, targetId: pId });
+                    }
+                }
+            };
+
+            const handleRightClickAvatar = (pName) => { setSelectedProfileTarget(pName); };
+
+            const handleHandClick = (clickedPlayerId, handIndex) => {
+                setShowEmoteWheel(false);
+                if (!gameStarted || !roomState?.gameState) return;
+                const state = roomState.gameState;
+                if (state.phase === 'GAME_OVER' || state.phase === 'ANIMATING') return;
+                
+                const currentPlayer = state.players[state.turnIndex]; 
+                if (currentPlayer?.id !== user.id || currentPlayer.isDead) return;
+
+                playSFX('select');
+                if (state.phase === 'SELECT_OWN' || state.phase === 'SELECT_TARGET' || state.phase === 'CONFIRM') {
+                    if (clickedPlayerId === user.id) { 
+                        setSelectedOwn({ handIndex }); 
+                        if (selectedTarget) { /* Wait for confirm button */ } 
+                    } 
+                    else {
+                        const tgtPlayer = state.players.find(p => p.id === clickedPlayerId);
+                        if (tgtPlayer && tgtPlayer.hands[handIndex] !== 0) { 
+                            if (selectedOwn) { 
+                                setSelectedTarget({ playerId: clickedPlayerId, handIndex }); 
+                            } 
+                        } 
+                        else { playSFX('error'); }
+                    }
+                }
+            };
+
+            const handleConfirmProtocol = () => {
+                socket.emit('execute_math', { 
+                    roomId: roomState.id, 
+                    userId: user.id, 
+                    myHandIdx: selectedOwn.handIndex, 
+                    targetId: selectedTarget.playerId, 
+                    targetHandIdx: selectedTarget.handIndex 
+                });
+            };
+
+            const handleActionSelect = (action) => {
+                if (action.type === 'COMBO') {
+                    socket.emit('execute_action', { roomId: roomState.id, userId: user.id, action, targetId: null });
+                } else if (action.type === 'ATTACK') { 
+                    setPendingAction(action); 
+                    // Tell server we changed local visual phase (not strictly needed by server, but good for local UX)
+                    setRoomState(prev => ({...prev, gameState: {...prev.gameState, phase: 'SELECT_ACTION_TARGET'}}));
+                }
+            };
+
+            const handleEndTurn = () => { socket.emit('end_turn', roomState.id); };
+            const sendChat = () => { if(!chatInput.trim()) return; socket.emit('chat_message', { roomId: roomState.id, username: user.username, text: chatInput }); setChatInput(''); };
+
+            // 倒计时前端显示模拟
+            const [timeLeft, setTimeLeft] = useState(30);
+            useEffect(() => {
+                if (!gameStarted || roomState?.gameState?.phase === 'GAME_OVER') return;
+                setTimeLeft(30);
+                const timer = setInterval(() => { setTimeLeft(prev => Math.max(0, prev - 1)); }, 1000);
+                return () => clearInterval(timer);
+            }, [roomState?.gameState?.turnIndex, gameStarted]);
+
+            // Render positioning (Mobile friendly adjustments)
+            const getSeatStyle = (total, visualIdx) => {
+                if (visualIdx === 0) return { top: '80%', left: '50%', transform: 'translate(-50%, -50%) scale(0.9)' }; 
+                if (total === 2 && visualIdx === 1) return { top: '20%', left: '50%', transform: 'translate(-50%, -50%) scale(0.9)' };
+                if (total === 3) {
+                    if(visualIdx === 1) return { top: '30%', left: '20%', transform: 'translate(-50%, -50%) scale(0.8)' };
+                    if(visualIdx === 2) return { top: '30%', left: '80%', transform: 'translate(-50%, -50%) scale(0.8)' };
+                }
+                if (total === 4) {
+                    if(visualIdx === 1) return { top: '50%', left: '15%', transform: 'translate(-50%, -50%) scale(0.7)' };
+                    if(visualIdx === 2) return { top: '15%', left: '50%', transform: 'translate(-50%, -50%) scale(0.7)' };
+                    if(visualIdx === 3) return { top: '50%', left: '85%', transform: 'translate(-50%, -50%) scale(0.7)' };
+                }
+                return {};
+            };
+
+            const getCardClass = (skin) => skin==='card_matrix' ? 'card-matrix' : skin==='card_blood' ? 'card-blood' : 'card-default';
+            const getRingClass = (ring) => ring==='ring_magic' ? 'ring-magic' : ring==='ring_cyber' ? 'ring-cyber' : 'ring-default';
+
+            if (!roomState) return <div className="absolute inset-0 flex items-center justify-center bg-[#030305] z-50 text-brand-cyan font-mono animate-pulse tracking-widest text-center px-4">CONNECTING TO NODE...</div>;
+            
+            const players = roomState.gameState ? roomState.gameState.players : roomState.players;
+            const statePhase = roomState.gameState ? roomState.gameState.phase : 'WAITING';
+            const turnIndex = roomState.gameState ? roomState.gameState.turnIndex : 0;
+            const currentPlayerTurn = players[turnIndex];
+            const isMeTurnNow = gameStarted && currentPlayerTurn?.id === user.id && !currentPlayerTurn.isDead;
+
+            const visualPlayers = useMemo(() => {
+                const meIdx = players.findIndex(p => p.id === user.id); if(meIdx === -1) return players;
+                const ordered = []; for(let i=0; i<players.length; i++) ordered.push(players[(meIdx + i) % players.length]); return ordered;
+            }, [players, user.id]);
+
+            const activeVisualIdx = visualPlayers.findIndex(p => p.id === currentPlayerTurn?.id);
+            const activeIndicatorStyle = gameStarted && activeVisualIdx !== -1 && statePhase !== 'GAME_OVER' ? getSeatStyle(players.length, activeVisualIdx) : { opacity: 0 };
+
+            return (
+                <div className={`min-h-screen absolute inset-0 overflow-hidden w-full ${shake ? 'animate-shake' : ''}`}>
+                    {selectedProfileTarget && <ProfileModal targetName={selectedProfileTarget} currentUser={user} onClose={()=>setSelectedProfileTarget(null)} onUpdateUser={onUpdateUser} t={t} />}
+                    {showInviteModal && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md" onClick={()=>setShowInviteModal(false)}>
+                            <div className="glass-panel-heavy p-8 rounded-3xl w-[400px] modal-responsive" onClick={e=>e.stopPropagation()}>
+                                <h3 className="text-xl font-bold text-brand-pink tracking-widest mb-4 flex items-center gap-2"><IconUserPlus/> {t.room_invite}</h3>
+                                <div className="space-y-2 max-h-64 overflow-y-auto hide-scroll">
+                                    {user.friends?.map(fname => (
+                                        <div key={fname} className="flex justify-between items-center bg-black/60 p-3 rounded border border-gray-800">
+                                            <span className="font-bold text-gray-200">{fname}</span>
+                                            <button onClick={()=>{
+                                                socket.emit('send_pm', { targetName: fname, text: `[系统] ${user.username} 邀请你加入房间: ${roomState.id}` });
+                                                setShowInviteModal(false); playSFX('select');
+                                            }} className="text-[10px] bg-brand-pink text-white px-3 py-1 rounded hover:bg-brand-pink/80 font-mono tracking-widest">SEND MSG</button>
+                                        </div>
+                                    ))}
+                                    {(!user.friends || user.friends.length === 0) && (
+                                        <div className="text-center text-gray-500 font-mono py-4">No friends found.</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="absolute top-0 w-full p-4 md:p-6 flex justify-between z-40 pointer-events-none">
+                        <div className="glass-panel px-4 py-2 rounded-xl flex items-center gap-2 pointer-events-auto"><span className="text-brand-cyan font-mono text-[10px] md:text-sm tracking-widest">{roomState.id}</span></div>
+                        <button onClick={doLeave} className="glass-panel px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/20 pointer-events-auto transition flex items-center gap-2 text-xs md:text-sm"><IconLogOut /> {t.btn_exit}</button>
+                    </div>
+
+{!gameStarted && (
+                        <div className="absolute inset-0 flex items-center justify-center z-30 bg-black/80 backdrop-blur-md">
+                            <div className="text-center glass-panel-heavy p-8 md:p-16 rounded-3xl relative overflow-hidden group shadow-[0_0_50px_rgba(0,240,255,0.1)] w-[90vw] md:w-[500px]">
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-cyan/10 to-transparent -translate-x-full group-hover:translate-x-[200%] transition-transform duration-[2s] ease-in-out infinite"></div>
+                                <h2 className="text-2xl md:text-4xl font-black mb-6 md:mb-8 text-brand-cyan drop-shadow-[0_0_15px_rgba(0,240,255,0.8)] tracking-widest">{t.room_wait}</h2>
+                                <div className="font-mono text-gray-400 mb-6 text-sm md:text-lg flex items-center justify-center gap-4"><span className="w-2 h-2 rounded-full bg-brand-pink animate-pulse"></span> Operator Links: <span className="text-white font-black text-xl md:text-2xl">{players.length} / {roomState.max || 4}</span></div>
+                                <div className="flex flex-col gap-4 w-full relative z-10">
+                                    {players.length >= 2 && <button onClick={startGame} className="cyber-btn flex-1 bg-brand-pink hover:bg-[#ff3399] text-white font-black text-lg md:text-xl py-4 shadow-[0_0_30px_rgba(255,0,127,0.6)] hover:shadow-[0_0_50px_rgba(255,0,127,0.9)] transition transform hover:-translate-y-1 tracking-widest">{t.room_start}</button>}
+                                    {players.length < (roomState.max || 4) && (
+                                        <div className="flex flex-col md:flex-row gap-2">
+                                            <button onClick={addBot} className="flex-1 border border-brand-cyan/50 text-brand-cyan hover:bg-brand-cyan/20 py-3 rounded transition font-mono tracking-widest text-xs md:text-sm">{t.room_add_bot}</button>
+                                            <button onClick={()=>setShowInviteModal(true)} className="flex-1 border border-brand-pink/50 text-brand-pink hover:bg-brand-pink/20 py-3 rounded transition font-mono tracking-widest flex items-center justify-center gap-2 text-xs md:text-sm"><IconUserPlus/> {t.room_invite}</button>
+                                        </div>
+                                    )}
+                                    {players.length < 2 && <p className="text-brand-purple animate-pulse font-mono mt-2 text-xs md:text-sm">{t.room_wait_more}</p>}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {statePhase === 'GAME_OVER' && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl">
+                            <div className="absolute inset-0 bg-brand-cyan/5 animate-pulse-fast"></div>
+                            <div className="text-center opacity-0 animate-fade-in-up relative z-10 w-full max-w-[900px] px-4 md:px-8 modal-responsive h-auto max-h-[90vh]">
+                                <h1 className="text-4xl md:text-7xl font-black text-brand-cyan mb-2 drop-shadow-[0_0_40px_rgba(0,240,255,0.8)] tracking-[0.2em]">{t.victory}</h1>
+                                <p className="text-[10px] md:text-sm text-gray-400 font-mono tracking-widest mb-6 md:mb-10">{t.victory_sub}</p>
+                                
+                                <div className="glass-panel-heavy rounded-2xl overflow-x-auto overflow-y-hidden mb-6 md:mb-8 border border-brand-cyan/30 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                                    <table className="w-full text-left font-mono min-w-[500px]">
+                                        <thead className="bg-brand-cyan/20 text-brand-cyan text-[10px] md:text-xs">
+                                            <tr>
+                                                <th className="p-2 md:p-4">{t.stat_op}</th>
+                                                <th className="p-2 md:p-4 text-center">{t.stat_dmg}</th>
+                                                <th className="p-2 md:p-4 text-center">{t.stat_taken}</th>
+                                                <th className="p-2 md:p-4 text-center">{t.stat_kills}</th>
+                                                <th className="p-2 md:p-4 text-center">{t.stat_status}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {players.map(p => {
+                                                const s = roomState.gameState?.matchStats[p.id] || {dmgDealt:0, dmgTaken:0, kills:0};
+                                                const maxScore = Math.max(...players.map(pl => (((roomState.gameState?.matchStats[pl.id]?.kills)||0)*20) + ((roomState.gameState?.matchStats[pl.id]?.dmgDealt)||0)));
+                                                const isMvp = ((s.kills*20 + s.dmgDealt) === maxScore) && s.dmgDealt > 0;
+                                                const pRank = p.id===user.id ? getRank(user.stats?.wins || 0) : getRank(Math.floor(Math.random()*100)); 
+                                                return (
+                                                <tr key={p.id} className="border-t border-white/5 hover:bg-white/5 transition text-xs md:text-sm">
+                                                    <td className="p-2 md:p-4 flex items-center gap-2 md:gap-3">
+                                                        <AvatarDisplay avatar={p.avatar} name={p.name} frame={p.frame} className="w-8 h-8 md:w-10 md:h-10 rounded-full shrink-0" />
+                                                        <div className="flex flex-col overflow-hidden">
+                                                            {p.title && <div className="text-[8px] md:text-[10px] font-bold bg-black/50 px-1 py-0.5 rounded border border-white/20 mb-0.5 max-w-max text-brand-gold truncate">{p.title}</div>}
+                                                            <div className="flex items-center gap-1 md:gap-2">
+                                                                <div className={`text-[6px] md:text-[8px] font-bold px-1 rounded-sm border ${pRank.bg}`} style={{color: pRank.c}}>{pRank.n}</div>
+                                                                <span className={`font-bold truncate ${p.id===user.id?'text-brand-pink':''}`}>{p.name}</span>
+                                                            </div>
+                                                        </div>
+                                                        {isMvp && <span className="bg-brand-gold text-black text-[8px] md:text-[10px] px-1 md:px-2 py-0.5 rounded-sm font-black ml-1 md:ml-2 shadow-[0_0_10px_rgba(255,215,0,0.5)]">{t.stat_mvp}</span>}
+                                                    </td>
+                                                    <td className="p-2 md:p-4 text-center text-brand-cyan font-bold">{s.dmgDealt.toFixed(1)}</td>
+                                                    <td className="p-2 md:p-4 text-center text-red-400">{s.dmgTaken.toFixed(1)}</td>
+                                                    <td className="p-2 md:p-4 text-center text-brand-gold font-bold">{s.kills}</td>
+                                                    <td className="p-2 md:p-4 text-center">{p.isDead ? <span className="text-gray-500">K.I.A</span> : <span className="text-green-400">ALIVE</span>}</td>
+                                                </tr>
+                                            )})}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4 mb-6 md:mb-8 shrink-0">
+                                    <div className="flex-1 flex justify-between items-center bg-black/50 p-4 md:p-6 rounded-xl border border-brand-gold/20">
+                                        <div className="text-left">
+                                            <div className="text-brand-gold font-mono text-xs md:text-sm tracking-widest uppercase">{t.reward}</div>
+                                        </div>
+                                        <div className="text-2xl md:text-4xl font-black text-brand-gold drop-shadow-[0_0_15px_rgba(255,215,0,0.5)]">
+                                            +{ questRewards.base } CR
+                                        </div>
+                                    </div>
+                                    {questRewards.bonus > 0 && (
+                                    <div className="flex-1 flex justify-between items-center bg-brand-cyan/10 p-4 md:p-6 rounded-xl border border-brand-cyan/30 animate-pulse">
+                                        <div className="text-left">
+                                            <div className="text-brand-cyan font-mono text-xs md:text-sm tracking-widest uppercase">{t.q_bonus}</div>
+                                        </div>
+                                        <div className="text-2xl md:text-4xl font-black text-brand-cyan drop-shadow-[0_0_15px_rgba(0,240,255,0.5)]">
+                                            +{ questRewards.bonus } CR
+                                        </div>
+                                    </div>
+                                    )}
+                                </div>
+
+                                <button onClick={doLeave} className="cyber-btn bg-brand-cyan text-black font-black text-lg md:text-xl px-12 md:px-16 py-4 md:py-5 shadow-[0_0_30px_rgba(0,240,255,0.6)] hover:bg-white hover:shadow-[0_0_50px_rgba(255,255,255,0.8)] transition-all tracking-widest transform hover:-translate-y-1 mb-10 shrink-0">
+                                    {t.btn_exit}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="absolute inset-0 pointer-events-none z-[-1]">
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center opacity-20 md:opacity-30 z-0">
+                            <div className="w-[300px] md:w-[450px] h-[300px] md:h-[450px] rounded-full border border-brand-cyan/20 relative overflow-hidden"><div className="radar-cone"></div><div className="absolute inset-0 border-[4px] border-dashed border-brand-purple/20 rounded-full animate-spin-reverse-slow"></div><div className="absolute inset-8 border border-brand-cyan/10 rounded-full"></div></div>
+                            <div className="absolute text-brand-cyan font-mono font-black tracking-[0.6em] text-sm md:text-lg bg-black/50 px-4 md:px-6 py-2 rounded-full border border-brand-cyan/30 drop-shadow-[0_0_10px_rgba(0,240,255,0.8)] whitespace-nowrap">{t.arena_proto}</div>
+                        </div>
+                    </div>
+
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-30 w-full pointer-events-none mt-10 md:mt-0">
+                        {statePhase === 'SELECT_ACTION_TARGET' && isMeTurnNow && <h2 className="text-xl md:text-2xl font-black text-brand-purple animate-pulse drop-shadow-[0_0_15px_rgba(138,43,226,0.8)] flex items-center justify-center gap-3 tracking-widest"><IconCrosshair/> {t.select_atk_target}</h2>}
+                        {statePhase === 'SELECT_TNT_TARGET' && isMeTurnNow && <h2 className="text-2xl md:text-3xl font-black text-red-500 animate-pulse tracking-widest drop-shadow-[0_0_20px_rgba(255,0,0,0.8)] flex items-center justify-center gap-3"><IconCrosshair/> {t.phase_tnt}</h2>}
+                    </div>
+                    
+                    {(selectedOwn && selectedTarget && statePhase !== 'ANIMATING') && isMeTurnNow && (
+                        <div className="absolute top-[60%] md:top-[65%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+                            <button onClick={handleConfirmProtocol} className="relative overflow-hidden pointer-events-auto bg-brand-pink text-white font-black text-lg md:text-2xl px-12 md:px-16 py-4 md:py-5 shadow-[0_0_40px_rgba(255,0,127,0.5)] hover:shadow-[0_0_60px_rgba(255,0,127,0.9)] transition-all tracking-[0.2em] group border border-white/30 backdrop-blur-sm">
+                                <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 skew-x-12"></div>
+                                <span className="relative z-10">{t.phase_confirm}</span>
+                                <div className="absolute top-0 left-0 w-3 md:w-4 h-3 md:h-4 border-t-2 border-l-2 border-white"></div><div className="absolute bottom-0 right-0 w-3 md:w-4 h-3 md:h-4 border-b-2 border-r-2 border-white"></div>
+                            </button>
+                        </div>
+                    )}
+
+                    {statePhase === 'ACTION_MENU' && isMeTurnNow && (
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 glass-panel-heavy p-6 md:p-8 rounded-2xl flex flex-col items-center gap-4 md:gap-5 w-[85vw] md:w-96 shadow-[0_0_80px_rgba(0,0,0,0.9)] border-brand-cyan/50 animate-[float_3s_ease-in-out_infinite]">
+                            <div className="text-brand-cyan font-mono text-xs md:text-sm tracking-[0.3em] uppercase mb-1 md:mb-2 font-black border-b border-brand-cyan/30 pb-2 w-full text-center">{t.phase_action}</div>
+                            <div className="flex flex-col gap-2 md:gap-3 w-full max-h-[40vh] overflow-y-auto">
+                                {roomState.gameState.availableActions.map((act, i) => (
+                                    <button key={i} onClick={() => handleActionSelect(act)} className="relative overflow-hidden w-full py-3 md:py-4 px-4 md:px-5 bg-black/60 border border-brand-cyan/30 hover:border-brand-cyan transition-all flex justify-between items-center group">
+                                        <div className="absolute inset-0 bg-brand-cyan/20 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                                        <span className="relative z-10 font-bold tracking-wider text-white text-sm md:text-base">{act.name}</span><span className="relative z-10 text-[10px] md:text-xs font-mono text-brand-cyan/90">{act.desc}</span>
+                                    </button>
+                                ))}
+                            </div>
+                            <button onClick={() => { handleEndTurn(); }} className="mt-2 md:mt-4 text-gray-500 hover:text-white text-xs md:text-sm font-mono tracking-widest">{t.action_skip}</button>
+                        </div>
+                    )}
+
+                    <div className="absolute z-10 pointer-events-none transition-all duration-700 ease-in-out flex justify-center items-center w-[100px] md:w-[120px] h-[100px] md:h-[120px]" style={activeIndicatorStyle}>
+                        {gameStarted && statePhase !== 'GAME_OVER' && (
+                            <div className="relative flex justify-center items-center w-full h-full">
+                                <svg viewBox="0 0 120 120" className={`absolute w-full h-full transform -rotate-90 drop-shadow-[0_0_15px_rgba(0,240,255,1)] ${getRingClass(players[turnIndex]?.ring)}`}>
+                                    <circle cx="60" cy="60" r="55" stroke="rgba(255,255,255,0.05)" strokeWidth="3" fill="none" />
+                                    {/* 345是 2*pi*55 的近似值 */}
+                                    <circle cx="60" cy="60" r="55" stroke="#00f0ff" strokeWidth="3" fill="none" strokeDasharray="345" strokeDashoffset={345 - (345 * timeLeft) / 30} className="transition-all duration-1000 ease-linear" />
+                                </svg>
+                            </div>
+                        )}
+                    </div>
+
+                    {visualPlayers.map((p, i) => {
+                        const isMe = p.id === user.id; const seatStyle = getSeatStyle(players.length, i);
+                        
+                        const pHands = p.hands || [1, 1];
+                        const pHp = p.hp !== undefined ? p.hp : (roomState.hp || 10);
+                        const pMaxHp = p.maxHp !== undefined ? p.maxHp : (roomState.hp || 10);
+                        const pIsDead = p.isDead || false;
+                        const pShield = p.shield || false;
+
+                        const leftOwn = selectedOwn?.handIndex === 0 && isMe; const rightOwn = selectedOwn?.handIndex === 1 && isMe;
+                        const leftTargetable = (statePhase === 'SELECT_TARGET' || (selectedOwn && isMeTurnNow)) && !isMe && pHands[0] !== 0; 
+                        const rightTargetable = (statePhase === 'SELECT_TARGET' || (selectedOwn && isMeTurnNow)) && !isMe && pHands[1] !== 0;
+                        const leftIsTarget = selectedTarget?.playerId === p.id && selectedTarget?.handIndex === 0; const rightIsTarget = selectedTarget?.playerId === p.id && selectedTarget?.handIndex === 1;
+                        const leftZeroLocked = (statePhase === 'SELECT_TARGET' || (selectedOwn && isMeTurnNow)) && !isMe && pHands[0] === 0; 
+                        const rightZeroLocked = (statePhase === 'SELECT_TARGET' || (selectedOwn && isMeTurnNow)) && !isMe && pHands[1] === 0;
+                        const cSkin = getCardClass(p.cardSkin);
+
+                        let tCol = '#00f0ff';
+                        if(p.title?.includes('欧米茄')||p.title?.includes('维度')) tCol = '#ffd700';
+                        else if(p.title?.includes('霓虹')||p.title?.includes('暗影')||p.title?.includes('虚空')) tCol = '#8a2be2';
+
+                        const activeEmote = activeEmotes[p.id];
+                        const pRank = p.id===user.id ? getRank(user.stats?.wins || 0) : getRank(Math.floor(Math.random()*100)); 
+                        
+                        const allChips = [...LOOT_POOLS[4], ...LOOT_POOLS[5]].filter(item=>item.type==='chip');
+                        const equippedChipData = allChips.find(c => c.id === p.chip);
+
+                        return (
+                            <div key={p.id} ref={el => seatRefs.current[p.id] = el} className={`absolute z-20 ${pIsDead ? 'opacity-30 grayscale' : ''}`} style={seatStyle} onContextMenu={e=>{e.preventDefault(); handleRightClickAvatar(p.name);}}>
+                                <div className={`relative flex gap-3 md:gap-5 items-center justify-center p-2 rounded-3xl ${pShield && p.chip!=='chip_heavy' && p.chip!=='chip_assassin' ? 'player-shield-wrapper' : ''}`}>
+                                    <div onClick={() => handleHandClick(p.id, 0)} className={`holo-slot ${cSkin} w-[55px] h-[75px] md:w-[70px] md:h-[90px] rounded-xl flex flex-col items-center justify-center ${leftTargetable||(isMe&&statePhase==='SELECT_OWN'&&gameStarted)?'cursor-pointer':''} ${leftOwn?'selected-own':''} ${leftIsTarget?'selected-target':''} ${leftZeroLocked?'locked-zero':''}`}>
+                                        <span className="text-2xl md:text-3xl font-mono font-black drop-shadow-md relative z-10">{pHands[0]}</span>{WEAPONS[pHands[0]] && <span className="absolute bottom-1 opacity-80 text-sm md:text-xl z-10">{WEAPONS[pHands[0]].icon}</span>}
+                                    </div>
+                                    
+                                    <div className="relative flex flex-col items-center">
+                                        {activeEmote && (
+                                            <div className="absolute -top-16 text-3xl md:text-4xl animate-emote-float z-50 drop-shadow-[0_0_10px_#fff]">
+                                                {activeEmote.e}
+                                            </div>
+                                        )}
+
+                                        {showEmoteWheel && isMe && (
+                                            <div className="absolute -top-24 w-28 h-28 md:w-32 md:h-32 bg-black/80 rounded-full border border-brand-cyan/50 backdrop-blur-md flex items-center justify-center gap-1 md:gap-2 flex-wrap p-2 z-50 animate-fade-in shadow-[0_0_30px_rgba(0,240,255,0.2)]">
+                                                {['❓','💀','🥶','🔥'].map(em => (
+                                                    <button key={em} onClick={(e)=>{e.stopPropagation(); triggerEmote(p.id, em); setShowEmoteWheel(false);}} className="text-xl md:text-2xl hover:scale-125 transition bg-white/5 p-1 rounded-full">{em}</button>
+                                                ))}
+                                                <button onClick={(e)=>{e.stopPropagation(); setShowEmoteWheel(false);}} className="absolute bottom-1 text-[10px] md:text-xs text-gray-500 hover:text-white">CLOSE</button>
+                                            </div>
+                                        )}
+
+                                        {p.title && <div className="absolute -top-8 md:-top-10 text-[8px] md:text-[10px] font-bold bg-black/60 px-1 md:px-2 py-0.5 rounded border mb-1 whitespace-nowrap z-20 shadow-[0_0_10px_currentColor]" style={{borderColor:`${tCol}40`, color:tCol}}>{p.title}</div>}
+                                        <div className="absolute -top-3 md:-top-4 flex items-center gap-1 z-20 bg-black/80 px-1 md:px-1.5 py-0.5 rounded shadow-[0_0_5px_currentColor]" style={{color: pRank.c, borderColor: pRank.c}}>
+                                            <span className="text-[6px] md:text-[8px] font-bold">{pRank.n}</span>
+                                        </div>
+
+                                        <div className={`w-[60px] h-[60px] md:w-[80px] md:h-[80px] bg-black/80 rounded-full border-[2px] md:border-[3px] flex items-center justify-center z-10 overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.9)] relative ${(statePhase==='SELECT_ACTION_TARGET'||statePhase==='SELECT_TNT_TARGET')&&!isMe?'cursor-crosshair':isMe?'cursor-pointer':''} ${isMe && !p.frame?.startsWith('frame_') ? 'border-brand-cyan' : 'border-transparent'}`} onClick={() => handleAvatarClick(p.id)}>
+                                            {pIsDead ? <span className="text-red-500 font-mono text-lg md:text-2xl font-bold">X_X</span> : <AvatarDisplay avatar={p.avatar} name={p.name} frame={p.frame} className="w-[65px] h-[65px] md:w-[85px] md:h-[85px] rounded-full" />}
+                                        </div>
+
+                                        {equippedChipData && (
+                                            <div className="absolute -bottom-2 -left-2 w-6 h-6 md:w-8 md:h-8 module-slot rounded text-xs md:text-sm bg-black z-30 has-tooltip shadow-[0_0_10px_#00f0ff]">
+                                                {equippedChipData.icon}
+                                                <div className="tooltip-custom glass-panel-heavy p-2 md:p-3 rounded-lg text-left w-40 md:w-48 border-brand-cyan/50 shadow-[0_0_20px_rgba(0,240,255,0.4)] pointer-events-none hidden md:block">
+                                                    <div className="text-brand-cyan font-bold text-[10px] md:text-xs mb-1">{equippedChipData.n}</div>
+                                                    <div className="text-[8px] md:text-[10px] font-mono text-gray-300 whitespace-pre-wrap leading-tight">{equippedChipData.desc}</div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div onClick={() => handleHandClick(p.id, 1)} className={`holo-slot ${cSkin} w-[55px] h-[75px] md:w-[70px] md:h-[90px] rounded-xl flex flex-col items-center justify-center ${rightTargetable||(isMe&&statePhase==='SELECT_OWN'&&gameStarted)?'cursor-pointer':''} ${rightOwn?'selected-own':''} ${rightIsTarget?'selected-target':''} ${rightZeroLocked?'locked-zero':''}`}>
+                                        <span className="text-2xl md:text-3xl font-mono font-black drop-shadow-md relative z-10">{pHands[1]}</span>{WEAPONS[pHands[1]] && <span className="absolute bottom-1 opacity-80 text-sm md:text-xl z-10">{WEAPONS[pHands[1]].icon}</span>}
+                                    </div>
+                                </div>
+                                <div className="absolute top-[75px] md:top-[90px] left-1/2 transform -translate-x-1/2 glass-panel px-3 md:px-5 py-1.5 md:py-2 rounded-xl text-center min-w-[120px] md:min-w-[160px] z-10 mt-2">
+                                    <div className={`font-black text-xs md:text-sm truncate tracking-wide ${isMe ? 'text-brand-cyan' : 'text-white'}`}>{p.name}</div>
+                                    <div className="w-full bg-gray-900 h-1.5 md:h-2 rounded-full mt-1.5 md:mt-2 overflow-hidden border border-white/5"><div className="h-full bg-gradient-to-r from-brand-pink to-brand-cyan transition-all duration-300" style={{ width: `${Math.max(0, (pHp/pMaxHp)*100)}%` }}></div></div>
+                                    <div className="text-[10px] md:text-xs font-mono mt-1 md:mt-1.5 text-gray-400 font-bold tracking-widest">{t.stat_hp}: {pHp.toFixed(1)} / {pMaxHp}</div>
+                                </div>
+                            </div>
+                        );
+                    })}
+
+                    {projectiles.map(p => (
+                        <div key={p.id} className="projectile-item" style={{ left: p.x1, top: p.y1, '--dx': `${p.dx}px`, '--dy': `${p.dy}px`, '--angle': `${p.angle}rad` }}>
+                            {p.type === 'arrow' && <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 8px #00f0ff)'}}><line x1="12" y1="22" x2="12" y2="2"></line><polyline points="5 9 12 2 19 9"></polyline></svg>}
+                            {p.type === 'sword' && <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ff007f" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 10px #ff007f)'}}><path d="M4 14 Q 12 2 20 14" /><path d="M6 14 Q 12 6 18 14" opacity="0.5" /></svg>}
+                        </div>
+                    ))}
+
+                    {vfx.map(v => (
+                        <div key={v.id} className="absolute pointer-events-none z-50 animate-float-up font-black text-2xl md:text-4xl" style={{ left: v.x - 20, top: v.y - 50, color: v.color, textShadow: `0 0 20px ${v.color}` }}>{v.text}</div>
+                    ))}
+
+                    <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 z-50 flex flex-col items-end">
+                        {isChatOpen ? (
+                            <div className="glass-panel w-72 md:w-80 h-80 md:h-96 rounded-2xl flex flex-col shadow-[0_10px_50px_rgba(0,0,0,0.9)] border border-brand-cyan/20 animate-fade-in-up">
+                                <div className="p-3 md:p-4 border-b border-white/10 flex justify-between items-center bg-black/60 rounded-t-2xl"><span className="text-brand-cyan font-mono text-xs md:text-sm font-bold flex items-center gap-2 tracking-widest">SYSTEM_LOGS</span><button onClick={() => { setIsChatOpen(false); setUnreadMsg(0); }} className="text-gray-400 hover:text-white transition"><IconMinimize /></button></div>
+                                <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2 md:space-y-3 font-mono text-[10px] md:text-xs hide-scroll bg-black/40">
+                                    {logs.map(l => (<div key={l.id} className={l.type==='chat' ? 'text-white' : l.type==='combat' ? 'text-brand-pink font-bold' : 'text-brand-purple'}><span className="opacity-40 text-[8px] md:text-[10px]">[{l.time}] </span>{l.text}</div>))}
+                                    <div ref={logsEndRef} />
+                                </div>
+                                <div className="p-2 md:p-3 border-t border-white/10 bg-black/60 rounded-b-2xl">
+                                    <div className="flex items-center gap-2 bg-black/80 border border-gray-700 rounded-lg p-2 focus-within:border-brand-cyan transition shadow-[inset_0_0_5px_rgba(0,0,0,0.5)]">
+                                        <span className="text-brand-cyan font-mono text-xs md:text-sm">$&gt;</span><input type="text" className="bg-transparent text-xs md:text-sm w-full outline-none font-mono text-gray-200" placeholder="Transmit..." value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key==='Enter' && sendChat()} />
+                                        <button onClick={sendChat} className="text-gray-400 hover:text-brand-cyan transition"><IconSend /></button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <button onClick={() => { setIsChatOpen(true); setUnreadMsg(0); }} className="glass-panel-heavy p-3 md:p-4 rounded-full hover:bg-white/10 transition shadow-[0_5px_30px_rgba(0,0,0,0.8)] border border-brand-cyan/30 relative group">
+                                <IconMessageCircle className="group-hover:text-brand-cyan transition w-5 h-5 md:w-6 md:h-6" />
+                                {unreadMsg > 0 && <span className="absolute -top-1 -right-1 bg-brand-pink text-white text-[8px] md:text-[10px] font-bold w-4 h-4 md:w-5 md:h-5 flex items-center justify-center rounded-full animate-bounce shadow-[0_0_10px_rgba(255,0,127,0.8)]">{unreadMsg}</span>}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+const App = () => {
+            const [gameState, setGameState] = useState('LOADING'); 
+            const [user, setUser] = useState(null);
+            // 修复：统一定义为 activeRoom，与 BattleArena 接收的 initialRoom={activeRoom} 对应
+            const [activeRoom, setActiveRoom] = useState(null); 
+            const [lang, setLang] = useState('zh');
+
+            useEffect(() => {
+                const handleInteract = () => { if (window.isBgmOn && bgmCtx && bgmCtx.state === 'suspended') bgmCtx.resume(); };
+                window.addEventListener('mousedown', handleInteract);
+                window.addEventListener('touchstart', handleInteract);
+                
+                const saved = localStorage.getItem('tactical_user_cache');
+                if (saved) { 
+                    const parsed = JSON.parse(saved);
+                    setUser(parsed);
+                    setGameState('LOBBY');
+                    
+                    // 重新连接并验明正身
+                    socket.emit('authenticate', parsed.username);
+
+                    if (parsed.settings?.bgm) setTimeout(() => toggleBGM(true), 200);
+                } else {
+                    setGameState('LOGIN');
+                }
+                return () => {
+                    window.removeEventListener('mousedown', handleInteract);
+                    window.removeEventListener('touchstart', handleInteract);
+                }
+            }, []);
+
+            useEffect(() => {
+                const handleUserUpdate = (u) => {
+                    setUser(u);
+                    localStorage.setItem('tactical_user_cache', JSON.stringify(u));
+                };
+                socket.on('user_state_update', handleUserUpdate);
+                return () => socket.off('user_state_update', handleUserUpdate);
+            }, []);
+
+            const handleLogin = (u) => { setUser(u); setGameState('LOBBY'); };
+            const handleLogout = () => { 
+                setUser(null); 
+                localStorage.removeItem('tactical_user_cache'); 
+                setGameState('LOGIN'); 
+                setActiveRoom(null);
+                toggleBGM(false); 
+            };
+            const handleLeaveRoom = () => { setActiveRoom(null); setGameState('LOBBY'); };
+            const handleUpdateUser = (u) => { setUser(u); };
+
+            // 监听服务器端房间加入成功事件，处理画面无缝跳转
+            useEffect(() => {
+                const onRoomStateUpdate = (room) => {
+                    if (!user) return;
+                    // 仅当玩家自身处于房间中且当前尚未跳转时进行跳转
+                    const isMeInRoom = room?.players?.find(p => p.username === user.username);
+                    if (isMeInRoom) {
+                        setActiveRoom(room); // 现在不会报错崩溃了！
+                        if (gameState !== 'ARENA') {
+                            setGameState('ARENA');
+                        }
+                    }
+                };
+                
+                socket.on('room_created', onRoomStateUpdate);
+                socket.on('room_state_update', onRoomStateUpdate);
+
+                return () => {
+                    socket.off('room_created', onRoomStateUpdate);
+                    socket.off('room_state_update', onRoomStateUpdate);
+                }
+            }, [user, gameState]);
+
+            return (
+                <>
+                    <BackgroundEngine theme={user?.settings?.bgTheme || 'stars'} />
+                    {gameState === 'LOADING' && <div className="h-screen w-full flex items-center justify-center text-brand-cyan font-mono animate-pulse tracking-widest text-center px-4">SYSTEM BOOTING...</div>}
+                    {gameState === 'LOGIN' && <LoginScreen onLogin={handleLogin} lang={lang} setLang={setLang} />}
+                    {gameState === 'LOBBY' && <LobbyScreen user={user} onJoinRoom={()=>{}} onLogout={handleLogout} lang={lang} setLang={setLang} onUpdateUser={handleUpdateUser} />}
+                    {gameState === 'ARENA' && <BattleArena user={user} onLeave={handleLeaveRoom} lang={lang} onUpdateUser={handleUpdateUser} initialRoom={activeRoom} />}
+                </>
+            );
+        };
+
+        // --- 辅助函数 ---
+        const getCardClass = (skin) => {
+            if (skin === 'card_matrix') return 'card-matrix';
+            if (skin === 'card_blood') return 'card-blood';
+            return 'card-default';
+        };
+
+        const getRingClass = (ring) => {
+            if (ring === 'ring_magic') return 'ring-magic';
+            if (ring === 'ring_cyber') return 'ring-cyber';
+            return 'ring-default';
+        };
+
+        // --- 背景引擎组件 (BackgroundEngine) ---
+        const BackgroundEngine = ({ theme }) => {
+            if (theme === 'grid') return <div className="bg-grid-perspective"><div className="scanlines"></div></div>;
+            if (theme === 'orbs') return <div className="bg-orbs-container"><div className="orb orb-1 animate-orb-float"></div><div className="orb orb-2 animate-orb-float" style={{animationDelay:'-5s'}}></div><div className="orb orb-3 animate-pulse-fast"></div></div>;
+            if (theme === 'abstract') return <div className="bg-abstract-container"><div className="floating-glyph animate-float" style={{top:'20%',left:'10%'}}>&#x214B;</div><div className="floating-glyph animate-float" style={{top:'60%',right:'15%',animationDelay:'1s'}}>&#x2207;</div><div className="floating-glyph animate-float" style={{top:'80%',left:'40%',animationDelay:'2s'}}>&#x2A02;</div></div>;
+            if (theme === 'chaos') return <div className="bg-chaos-wrap"><div className="chaos-emoji" style={{animationDelay:'0s'}}>👁️</div><div className="chaos-emoji" style={{animationDelay:'-2.5s'}}>🌀</div></div>;
+            if (theme === 'quantum') return <div className="bg-quantum-wrap">{[...Array(20)].map((_,i)=><div key={i} className="quantum-star" style={{'--rot':`${i*18}deg`, animationDelay:`${Math.random()}s`}}></div>)}</div>;
+            
+            // 默认返回 stars
+            return (
+                <div className="stars-container">
+                    <div className="stars"></div>
+                    <div className="stars2"></div>
+                    <div className="shooting-star"></div>
+                    <div className="shooting-star" style={{top:'20%',left:'40%',animationDelay:'2.5s',width:'150px'}}></div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

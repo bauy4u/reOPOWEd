@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TACTICAL_ARENA // Phase 2 CORE</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { brand: { cyan: '#00f0ff', purple: '#8a2be2', pink: '#ff007f', dark: '#050505', gold: '#ffd700', green: '#00ff00', red: '#ff0000' } },
+                    fontFamily: { mono: ['"Fira Code"', '"JetBrains Mono"', 'monospace'], sans: ['"Noto Sans SC"', '"Inter"', 'sans-serif'] },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite', 'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                        'float-up': 'floatUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards', 'spin-slow': 'spin 15s linear infinite',
+                        'spin-reverse-slow': 'spinReverse 20s linear infinite', 'radar-sweep': 'radarSweep 3s linear infinite',
+                        'scanline': 'scanline 8s linear infinite', 'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fade-in-up': 'fadeInUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards', 'fade-in': 'fadeIn 0.3s ease-out forwards',
+                        'grid-move': 'gridMove 10s linear infinite', 'orb-float': 'orbFloat 20s infinite alternate ease-in-out',
+                        'emoji-drift': 'emojiDrift 15s linear infinite', 'chaos-bg': 'chaosBg 5s infinite alternate linear',
+                        'shimmer': 'shimmer 2s infinite linear', 'flash-white': 'flashWhite 1.5s ease-out forwards',
+                        'emote-float': 'emoteFloat 2s ease-out forwards'
+                    },
+                    keyframes: {
+                        glowPulse: { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.5 } },
+                        float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } },
+                        shake: { '10%, 90%': { transform: 'translate3d(-2px, 2px, 0)' }, '20%, 80%': { transform: 'translate3d(4px, -2px, 0)' }, '30%, 50%, 70%': { transform: 'translate3d(-8px, 4px, 0)' }, '40%, 60%': { transform: 'translate3d(8px, -4px, 0)' } },
+                        floatUp: { '0%': { opacity: 0, transform: 'translateY(20px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+                        fadeInUp: { '0%': { opacity: 0, transform: 'translateY(30px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+                        fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
+                        spinReverse: { '100%': { transform: 'rotate(-360deg)' } },
+                        radarSweep: { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
+                        scanline: { '0%': { transform: 'translateY(-100%)' }, '100%': { transform: 'translateY(100vh)' } },
+                        gridMove: { '0%': { backgroundPosition: '0 0' }, '100%': { backgroundPosition: '0 50px' } },
+                        orbFloat: { '0%': { transform: 'translate(0, 0) scale(1)' }, '100%': { transform: 'translate(100px, 50px) scale(1.2)' } },
+                        emojiDrift: { '0%': { transform: 'translateY(100vh) rotate(0deg)' }, '100%': { transform: 'translateY(-20vh) rotate(360deg)' } },
+                        chaosBg: { '0%': { backgroundColor: '#1a0005', filter: 'hue-rotate(0deg)' }, '50%': { backgroundColor: '#001a1a', filter: 'hue-rotate(180deg)' }, '100%': { backgroundColor: '#1a001a', filter: 'hue-rotate(360deg)' } },
+                        shimmer: { '0%': { backgroundPosition: '-1000px 0' }, '100%': { backgroundPosition: '1000px 0' } },
+                        flashWhite: { '0%': { background: 'white', opacity: 1 }, '100%': { background: 'white', opacity: 0 } },
+                        emoteFloat: { '0%': { opacity: 0, transform: 'translateY(0) scale(0.5)' }, '20%': { opacity: 1, transform: 'translateY(-20px) scale(1.2)' }, '80%': { opacity: 1, transform: 'translateY(-40px) scale(1)' }, '100%': { opacity: 0, transform: 'translateY(-60px) scale(0.8)' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+        body { background-color: #030305; color: #ffffff; font-family: 'Noto Sans SC', sans-serif; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: none; user-select: none; }
+
+        .modal-responsive { width: 100%; max-width: 900px; max-height: 90vh; margin: 1rem; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+
+        .stars-container { position: fixed; inset: 0; z-index: -5; background: radial-gradient(circle at bottom, #110e20 0%, #030305 100%); pointer-events: none; }
+        .stars, .stars2 { position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; display: block; }
+        .stars { background: transparent url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/stars.png') repeat top center; animation: moveStars 100s linear infinite; opacity: 0.4; }
+        .stars2 { background: transparent url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/stars.png') repeat top center; animation: moveStars 150s linear infinite; opacity: 0.2; background-size: 200px 200px; }
+        @keyframes moveStars { from { background-position: 0 0; } to { background-position: -10000px 5000px; } }
+        .shooting-star { position: absolute; left: 50%; top: 50%; width: 100px; height: 2px; background: linear-gradient(90deg, rgba(0, 240, 255, 1), transparent); border-radius: 999px; transform: rotate(-45deg); opacity: 0; animation: shoot 5s linear infinite; z-index: 1; }
+        .shooting-star:nth-child(1) { top: 10%; left: 80%; animation-delay: 0s; } .shooting-star:nth-child(2) { top: 20%; left: 40%; animation-delay: 2.5s; width: 150px; }
+        @keyframes shoot { 0% { transform: translateX(0) translateY(0) rotate(-45deg); opacity: 1; } 20% { opacity: 0; } 100% { transform: translateX(-1000px) translateY(1000px) rotate(-45deg); opacity: 0; } }
+
+        .bg-grid-perspective { position: fixed; inset: 0; z-index: -5; background-color: #030305; background-image: linear-gradient(to right, rgba(0, 240, 255, 0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 240, 255, 0.08) 1px, transparent 1px); background-size: 50px 50px; transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px); pointer-events: none;}
+        .bg-orbs-container { position: fixed; inset: 0; z-index: -5; background-color: #04020a; overflow: hidden; pointer-events: none;}
+        .orb { position: absolute; border-radius: 50%; filter: blur(80px); }
+        .orb-1 { width: 50vw; height: 50vw; background: rgba(0, 240, 255, 0.2); top: -20vh; left: -10vw; } .orb-2 { width: 60vw; height: 60vw; background: rgba(138, 43, 226, 0.2); bottom: -20vh; right: -10vw; animation-delay: -5s; } .orb-3 { width: 40vw; height: 40vw; background: rgba(255, 0, 127, 0.15); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -10s; }
+        .bg-abstract-container { position: fixed; inset: 0; z-index: -5; background-color: #050505; overflow: hidden; pointer-events: none;}
+        .floating-glyph { position: absolute; font-size: 5rem; opacity: 0.05; color: #00f0ff; filter: drop-shadow(0 0 10px #00f0ff); }
+        .bg-chaos-wrap { position: fixed; inset: 0; z-index: -5; overflow: hidden; filter: saturate(2) contrast(1.5); pointer-events: none;}
+        .chaos-emoji { position: absolute; font-size: 15rem; opacity: 0; animation: chaosMove 8s infinite alternate ease-in-out; text-shadow: 0 0 30px rgba(255,255,255,0.8); }
+        @keyframes chaosMove { 0% { transform: translate(-20vw, -20vh) scale(0.1) skew(0deg) rotate(0deg); opacity: 0; filter: blur(15px); } 20% { opacity: 0.8; filter: blur(0px); } 50% { transform: translate(60vw, 60vh) scale(3) skew(45deg) rotate(180deg); opacity: 1; filter: drop-shadow(0 0 50px red) hue-rotate(90deg); } 80% { opacity: 0.8; filter: blur(0px); } 100% { transform: translate(-30vw, 120vh) scale(0.2) skew(-45deg) rotate(360deg); opacity: 0; filter: blur(20px) hue-rotate(270deg); } }
+        .bg-quantum-wrap { position: fixed; inset: 0; z-index: -5; background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; pointer-events: none;}
+        .quantum-star { position: absolute; left: 50%; top: 50%; width: 3px; height: 200px; transform-origin: top center; animation: warpExpand 3s infinite ease-in; opacity: 0; }
+        @keyframes warpExpand { 0% { transform: rotate(var(--rot)) translateY(20px) scaleY(0.1); opacity: 0; } 50% { opacity: 1; } 100% { transform: rotate(var(--rot)) translateY(1200px) scaleY(3); opacity: 0; } }
+
+        .scanlines { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1)); background-size: 100% 4px; opacity: 0.4; }
+        .radar-cone { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent 70%, rgba(0, 240, 255, 0.3) 100%); animation: radarSweepAnim 3s linear infinite; z-index: 0; pointer-events: none; }
+        @keyframes radarSweepAnim { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .glass-panel { background: rgba(15, 15, 20, 0.55); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.06); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
+        .glass-panel-heavy { background: rgba(5, 5, 8, 0.85); backdrop-filter: blur(30px); border: 1px solid rgba(0, 240, 255, 0.2); box-shadow: 0 0 50px rgba(0, 240, 255, 0.1); }
+
+        .frame-default { border: 1px solid rgba(255,255,255,0.2); }
+        .frame-neon { border: 2px solid #00f0ff; box-shadow: 0 0 10px #00f0ff, inset 0 0 10px #00f0ff; }
+        .frame-inferno { border: 2px solid #ff3300; box-shadow: 0 0 15px #ff3300, inset 0 0 10px #ff0000; animation: pulse-fast 1s infinite; }
+        .frame-gold { border: 2px solid #ffd700; box-shadow: 0 0 10px #ffd700, inset 0 0 5px #ffd700; }
+
+        .holo-slot { position: relative; background: rgba(0, 240, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 10; }
+        .holo-slot:hover:not(.locked) { transform: translateY(-4px); }
+
+        .card-default { border-color: rgba(255,255,255,0.1); } .card-default:hover:not(.locked) { border-color: rgba(255,255,255,0.4); box-shadow: 0 5px 15px rgba(0,240,255,0.2); }
+        .card-matrix { border-color: #00ff00; background: rgba(0,255,0,0.05); color: #00ff00; box-shadow: inset 0 0 10px rgba(0,255,0,0.1); } .card-matrix:hover:not(.locked) { border-color: #00ff00; box-shadow: 0 5px 15px rgba(0,255,0,0.3), inset 0 0 10px rgba(0,255,0,0.2); }
+        .card-blood { border-color: #ff0000; background: rgba(255,0,0,0.08); color: #ff3333; box-shadow: inset 0 0 15px rgba(255,0,0,0.2); } .card-blood:hover:not(.locked) { border-color: #ff0000; box-shadow: 0 5px 20px rgba(255,0,0,0.4), inset 0 0 15px rgba(255,0,0,0.3); }
+
+        .card-default.selected-own { border-color: #00f0ff !important; background-color: rgba(0, 240, 255, 0.15) !important; box-shadow: 0 0 20px rgba(0, 240, 255, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.2) !important; color: white !important; text-shadow: 0 0 10px #00f0ff !important; }
+        .card-matrix.selected-own { border-color: #00ff00 !important; background-color: rgba(0, 255, 0, 0.2) !important; box-shadow: 0 0 20px rgba(0, 255, 0, 0.5), inset 0 0 10px rgba(0, 255, 0, 0.3) !important; color: white !important; text-shadow: 0 0 10px #00ff00 !important; }
+        .card-blood.selected-own { border-color: #ff0000 !important; background-color: rgba(255, 0, 0, 0.25) !important; box-shadow: 0 0 25px rgba(255, 0, 0, 0.6), inset 0 0 15px rgba(255, 0, 0, 0.4) !important; color: white !important; text-shadow: 0 0 10px #ff0000 !important; }
+        .holo-slot.selected-target { border-color: #ff007f !important; background-color: rgba(255, 0, 127, 0.15) !important; box-shadow: 0 0 20px rgba(255, 0, 127, 0.4), inset 0 0 10px rgba(255, 0, 127, 0.2) !important; color: white !important; text-shadow: 0 0 10px #ff007f !important; }
+        .holo-slot.locked-zero { border-color: rgba(255, 0, 0, 0.4) !important; background: rgba(255, 0, 0, 0.05) !important; cursor: not-allowed !important; opacity: 0.5 !important; pointer-events: none !important; box-shadow: none !important; text-shadow: none !important; color: white !important;}
+        .holo-slot.locked-zero::before { content: 'X'; position: absolute; font-family: monospace; font-size: 3rem; color: rgba(255,0,0,0.5); z-index: 0; }
+
+        .player-shield-wrapper::after { content: ''; position: absolute; top: -15px; left: -15px; right: -15px; bottom: -15px; border: 2px solid rgba(0, 240, 255, 0.3); border-radius: 20px; box-shadow: 0 0 30px rgba(0, 240, 255, 0.15), inset 0 0 15px rgba(0, 240, 255, 0.1); animation: shield-pulse 3s ease-in-out infinite; pointer-events: none; z-index: 50; }
+        @keyframes shield-pulse { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.02); } }
+
+        @keyframes projectileFly { 0% { transform: translate(0, 0) rotate(var(--angle)) scale(0.5); opacity: 0; } 15% { opacity: 1; transform: translate(calc(var(--dx) * 0.15), calc(var(--dy) * 0.15)) rotate(var(--angle)) scale(1.3); } 85% { opacity: 1; transform: translate(calc(var(--dx) * 0.85), calc(var(--dy) * 0.85)) rotate(var(--angle)) scale(1.1); } 100% { transform: translate(var(--dx), var(--dy)) rotate(var(--angle)) scale(1); opacity: 0; } }
+        .projectile-item { position: absolute; width: 40px; height: 40px; margin-top: -20px; margin-left: -20px; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 1000; animation: projectileFly 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+        .ring-default { transition: all 1s linear; }
+        .ring-magic { transform-origin: center; animation: spin-slow 8s linear infinite !important; filter: drop-shadow(0 0 15px #ff007f) !important; }
+        .ring-magic circle:nth-child(2) { stroke-dasharray: 10 25 !important; stroke: #ff007f !important; }
+        .ring-cyber { transform-origin: center; animation: spin-reverse-slow 5s linear infinite !important; filter: drop-shadow(0 0 15px #8a2be2) !important; }
+        .ring-cyber circle:nth-child(2) { stroke-dasharray: 40 80 150 !important; stroke-width: 5 !important; stroke: #8a2be2 !important; }
+        .ring-flame { transform-origin: center; animation: spin-slow 4s linear infinite !important; filter: drop-shadow(0 0 15px #ff3300) !important; }
+        .ring-flame circle:nth-child(2) { stroke-dasharray: 15 10 30 !important; stroke: #ff3300 !important; stroke-width: 4 !important; }
+        .ring-frost { transform-origin: center; animation: spin-reverse-slow 10s linear infinite !important; filter: drop-shadow(0 0 15px #00bfff) !important; }
+        .ring-frost circle:nth-child(2) { stroke-dasharray: 5 15 !important; stroke: #00bfff !important; stroke-width: 3 !important; }
+        .ring-void { transform-origin: center; animation: spin-slow 3s linear infinite !important; filter: drop-shadow(0 0 20px #9400d3) drop-shadow(0 0 40px #4b0082) !important; }
+        .ring-void circle:nth-child(2) { stroke-dasharray: 2 8 20 8 !important; stroke: #9400d3 !important; stroke-width: 5 !important; }
+        .ring-chrono { transform-origin: center; animation: spin-reverse-slow 8s ease-in-out infinite !important; filter: drop-shadow(0 0 15px #ffd700) drop-shadow(0 0 30px #ff8c00) !important; }
+        .ring-chrono circle:nth-child(2) { stroke-dasharray: 50 10 5 10 !important; stroke: #ffd700 !important; stroke-width: 4 !important; }
+
+        .tarot-card { perspective: 1000px; width: 200px; height: 280px; cursor: pointer; }
+        .tarot-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
+        .tarot-card.flipped .tarot-inner { transform: rotateY(180deg); }
+        .tarot-front, .tarot-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid; }
+        .tarot-front { background: linear-gradient(135deg, #111, #222); border-color: rgba(255,255,255,0.1); transform: rotateY(180deg); }
+        .tarot-back { background: url('https://www.transparenttextures.com/patterns/stardust.png'), linear-gradient(135deg, #0f0c29, #302b63, #24243e); border-color: rgba(0, 240, 255, 0.4); box-shadow: 0 0 20px rgba(0,240,255,0.2); }
+
+        .module-box { background: rgba(0,0,0,0.8); border: 1px solid #00f0ff; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(0,240,255,0.3); }
+        .tooltip-custom { visibility: hidden; opacity: 0; transition: all 0.2s; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(10px); z-index: 100; white-space: nowrap; pointer-events: none; }
+        .has-tooltip:hover .tooltip-custom { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(-5px); }
+
+        .cyber-btn { clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px); }
+        .hide-scroll::-webkit-scrollbar { width: 0px; } .hide-scroll::-webkit-scrollbar-track { background: transparent; } .hide-scroll::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.3); border-radius: 2px; }
+        .text-gradient { background: linear-gradient(to right, #00f0ff, #8a2be2, #ff007f); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .text-gold-gradient { background: linear-gradient(to right, #ffd700, #ffaa00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* === 圣遗物VFX样式 === */
+        .relic-hacker-penetration {
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.4), inset 0 0 15px rgba(0, 255, 0, 0.1) !important;
+            border-color: rgba(0, 255, 0, 0.4) !important;
+        }
+        .card-hacker-portal {
+            border-color: #00ff00 !important;
+            background: rgba(0, 255, 0, 0.1) !important;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3), inset 0 0 10px rgba(0, 255, 0, 0.15) !important;
+        }
+        .hacker-digits-overlay {
+            position: absolute;
+            inset: -20px;
+            pointer-events: none;
+            z-index: 40;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 2px;
+            overflow: hidden;
+            border-radius: 50%;
+        }
+        .hacker-digit {
+            color: #00ff00;
+            font-family: 'Fira Code', monospace;
+            font-size: 10px;
+            opacity: 0;
+            animation: hackerDigitFloat 2s infinite ease-in-out;
+            text-shadow: 0 0 5px #00ff00;
+        }
+        @keyframes hackerDigitFloat {
+            0% { opacity: 0; transform: translateY(10px); }
+            30% { opacity: 0.8; }
+            70% { opacity: 0.6; }
+            100% { opacity: 0; transform: translateY(-15px); }
+        }
+        @keyframes hackerDigitFall {
+            0% { opacity: 0; transform: translateY(-20px); }
+            15% { opacity: 1; }
+            85% { opacity: 0.8; }
+            100% { opacity: 0; transform: translateY(40px); }
+        }
+        @keyframes hackerUltFlash {
+            0% { opacity: 0.8; }
+            50% { opacity: 0.5; }
+            100% { opacity: 0; }
+        }
+        @keyframes hackerUltText {
+            0% { opacity: 0; transform: scale(0.5); }
+            20% { opacity: 1; transform: scale(1.1); }
+            80% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.9); }
+        }
+    </style>
+</head>
+<body class="bg-black">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>

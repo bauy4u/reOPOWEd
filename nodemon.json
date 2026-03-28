@@ -1,0 +1,4 @@
+{
+  "watch": ["server.js", "GameEngine.js", "RoomManager.js", "BotAI.js", "data/"],
+  "ignore": ["database.json", "client/", "node_modules/"]
+}
