@@ -89,13 +89,13 @@
 
         .bg-chaos-wrap { position: fixed; inset: 0; z-index: -5; overflow: hidden; filter: saturate(2) contrast(1.5); pointer-events: none;}
 
-        .chaos-emoji { position: absolute; font-size: 15rem; opacity: 0; animation: chaosMove infinite alternate ease-in-out; text-shadow: 0 0 30px rgba(255,255,255,0.8); }
+        .chaos-emoji { position: absolute; font-size: 15rem; opacity: 0; animation: chaosMove 8s infinite alternate ease-in-out; text-shadow: 0 0 30px rgba(255,255,255,0.8); }
 
         @keyframes chaosMove { 0% { transform: translate(-20vw, -20vh) scale(0.1) skew(0deg) rotate(0deg); opacity: 0; filter: blur(15px); } 20% { opacity: 0.8; filter: blur(0px); } 50% { transform: translate(60vw, 60vh) scale(3) skew(45deg) rotate(180deg); opacity: 1; filter: drop-shadow(0 0 50px red) hue-rotate(90deg); } 80% { opacity: 0.8; filter: blur(0px); } 100% { transform: translate(-30vw, 120vh) scale(0.2) skew(-45deg) rotate(360deg); opacity: 0; filter: blur(20px) hue-rotate(270deg); } }
 
         .bg-quantum-wrap { position: fixed; inset: 0; z-index: -5; background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; pointer-events: none;}
 
-        .quantum-star { position: absolute; left: 50%; top: 50%; width: 3px; height: 200px; transform-origin: top center; animation: warpExpand infinite ease-in; opacity: 0; }
+        .quantum-star { position: absolute; left: 50%; top: 50%; width: 3px; height: 200px; transform-origin: top center; animation: warpExpand 3s infinite ease-in; opacity: 0; }
 
         @keyframes warpExpand { 0% { transform: rotate(var(--rot)) translateY(20px) scaleY(0.1); opacity: 0; } 50% { opacity: 1; } 100% { transform: rotate(var(--rot)) translateY(1200px) scaleY(3); opacity: 0; } }
 
@@ -272,7 +272,7 @@
             100% { opacity: 0; transform: scale(0.9); }
         }
     </style>
-  <script type="module" crossorigin src="/assets/index-BWxV8kP5.js"></script>
+  <script type="module" crossorigin src="/assets/index-CsL_2Nkj.js"></script>
 </head>
 <body class="bg-black">
     <div id="root"></div>

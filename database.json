@@ -417,15 +417,15 @@
       "id": "u_9jnekewoh",
       "stats": {
         "wins": 0,
-        "matches": 0
+        "matches": 1
       },
       "quests": {
         "kills": 0,
-        "matches": 0,
+        "matches": 1,
         "dmg": 0
       },
       "economy": {
-        "credits": 32200,
+        "credits": 26390,
         "unlocks": [
           "stars",
           "grid",
@@ -434,7 +434,19 @@
           "frame_default",
           "card_default",
           "bg_chaos",
-          "chip_sniper"
+          "chip_sniper",
+          "title_2",
+          "chip_heavy",
+          "avatar_c1",
+          "chip_medic",
+          "title_1",
+          "title_3",
+          "title_5",
+          "chip_vampire",
+          "avatar_c2",
+          "frame_neon",
+          "ring_frost",
+          "ring_magic"
         ]
       },
       "gacha": {
@@ -442,7 +454,7 @@
         "p5": 0
       },
       "settings": {
-        "bgTheme": "stars",
+        "bgTheme": "orbs",
         "avatar": "",
         "sfx": true,
         "bgm": false,
@@ -492,3 +504,6 @@
           ]
         }
       ]
+    }
+  }
+}

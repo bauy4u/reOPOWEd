@@ -605,13 +605,7 @@ const LobbyScreen = ({ user, onJoinRoom, onLogout, lang, setLang }) => {
                 <div className="flex-1 flex flex-col gap-4">
                     <div className="flex justify-between items-center mb-2">
                         <h2 className="text-lg md:text-xl font-bold tracking-widest">{t.lobby_active}</h2>
-                        <div className="flex gap-2">
-                            <button onClick={() => {
-                                socket.emit('debug_unlock', ['chip_hacker','chip_fury','chip_assassin','ring_magic','ring_cyber','ring_void','ring_chrono','ring_flame','ring_frost','bg_chaos','bg_quantum'], (res) => { playSFX('gacha_5star'); });
-                                socket.emit('debug_credits', 10000);
-                            }} className="text-[10px] font-mono border border-brand-gold/30 text-brand-gold px-2 py-1 rounded hover:bg-brand-gold/20 transition">[DEBUG] 解锁全金</button>
-                            <button onClick={() => setShowCreateModal(true)} className="cyber-btn text-xs md:text-sm bg-brand-cyan text-black hover:bg-white font-black px-6 md:px-8 py-2 md:py-3 transition shadow-[0_0_15px_rgba(0,240,255,0.4)] tracking-widest">+ {t.lobby_create}</button>
-                        </div>
+                        <button onClick={() => setShowCreateModal(true)} className="cyber-btn text-xs md:text-sm bg-brand-cyan text-black hover:bg-white font-black px-6 md:px-8 py-2 md:py-3 transition shadow-[0_0_15px_rgba(0,240,255,0.4)] tracking-widest">+ {t.lobby_create}</button>
                     </div>
                     <div className="flex-1 overflow-y-auto hide-scroll flex flex-col gap-3 md:gap-4 pb-10">
                     {rooms.length === 0 ? <div className="text-gray-500 text-center py-20 font-mono text-sm md:text-lg">{t.lobby_empty}</div> :
