@@ -1,6 +1,35 @@
 import React from 'react';
 
-// Relic VFX registry - register frontend visual effects for relics here
+/**
+ * Relic VFX Registry — 前端视觉效果注册表
+ *
+ * 每个圣遗物可以在此注册表中添加一个条目，键名为圣遗物的 chipId（如 'chip_hacker'）。
+ * 条目对象支持以下四个可选方法：
+ *
+ * @method getPlayerClasses(player, relicState) → string
+ *   返回附加到玩家容器的 CSS 类名，用于持续性视觉状态。
+ *   示例: return relicState?.active ? 'relic-glow' : '';
+ *
+ * @method renderOverlay(player, relicState) → React.ReactNode | null
+ *   返回覆盖在玩家头像上的 React 元素，用于粒子/动画等效果。
+ *   示例: return relicState?.active ? <div className="overlay-fx" /> : null;
+ *
+ * @method getHandOverride(handValue, relicState) → { icon, name, className } | null
+ *   当特定手牌值需要显示为特殊卡牌时，返回覆盖对象。
+ *   示例: return handValue === 2 ? { icon: '🔓', name: '门户', className: 'card-portal' } : null;
+ *
+ * @method renderStatusBar(player, relicState) → React.ReactNode | null
+ *   返回显示在玩家下方的状态栏 React 元素，用于展示圣遗物数值。
+ *   示例: return <div className="status-bar">能量: {relicState?.energy}</div>;
+ *
+ * 模板:
+ *   chip_example: {
+ *       getPlayerClasses(player, relicState) { return ''; },
+ *       renderOverlay(player, relicState) { return null; },
+ *       getHandOverride(handValue, relicState) { return null; },
+ *       renderStatusBar(player, relicState) { return null; }
+ *   }
+ */
 const relicVFXRegistry = {
     chip_hacker: {
         getPlayerClasses(player, relicState) {
