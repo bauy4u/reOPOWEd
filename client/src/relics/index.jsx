@@ -31,6 +31,18 @@ import React from 'react';
  *   }
  */
 const relicVFXRegistry = {
+    chip_athlete: {
+        getPlayerClasses(player, relicState) {
+            return 'relic-athlete-glow';
+        },
+        renderStatusBar(player, relicState) {
+            return (
+                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 border border-blue-400/50 px-2 py-0.5 rounded text-[8px] md:text-[10px] font-mono text-blue-400 whitespace-nowrap z-30 shadow-[0_0_10px_rgba(59,130,246,0.3)]">
+                    💪 健儿 | 伤害x2 CR x2
+                </div>
+            );
+        }
+    },
     chip_hacker: {
         getPlayerClasses(player, relicState) {
             return relicState?.isInPenetration ? 'relic-hacker-penetration' : '';

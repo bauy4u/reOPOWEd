@@ -416,6 +416,11 @@ class GameEngine {
 
             const myStats = state.matchStats[p.id] || { kills: 0, dmgDealt: 0 };
             let baseEarned = (isWin ? 100 : 30) + (myStats.kills * 20);
+            const gp = state.players.find(gp => gp.id === p.id);
+            if (gp) {
+                const relic = getRelic(gp.chip);
+                if (relic) baseEarned = relic.modifyCrReward(gp, baseEarned);
+            }
             let qBonus = 0;
 
             u.status = 'lobby';
