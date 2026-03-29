@@ -42,6 +42,9 @@ class RelicBase {
     // 执行圣遗物专属行动 (由 executeAction RELIC 分支调用)
     executeRelicAction(player, action, ctx) {}
 
+    // 对局结算时修改CR奖励倍率
+    modifyCrReward(player, baseEarned) { return baseEarned; }
+
     // 返回自定义状态对象，附加到 player.relicState 发送给前端用于VFX
     getCustomState(player) { return null; }
 }

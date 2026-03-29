@@ -23,7 +23,8 @@ const LOOT_POOLS = {
         { id: 'chip_vampire', type: 'chip', n: '吸血鬼模块', icon: '🩸', val: 'chip_vampire', desc: '近战利刃(5)造成伤害时恢复0.5 HP' },
         { id: 'chip_heavy', type: 'chip', n: '重型装甲', icon: '🪨', val: 'chip_heavy', desc: '最大HP+2，但护盾(4)失效' },
         { id: 'chip_sniper', type: 'chip', n: '鹰眼准星', icon: '🦅', val: 'chip_sniper', desc: '长弓(7)与重弩(8)额外+0.5伤害' },
-        { id: 'chip_medic', type: 'chip', n: '战地医疗', icon: '💉', val: 'chip_medic', desc: '恢复药剂(9)额外+1HP，但最大HP-2' }
+        { id: 'chip_medic', type: 'chip', n: '战地医疗', icon: '💉', val: 'chip_medic', desc: '恢复药剂(9)额外+1HP，但最大HP-2' },
+        { id: 'chip_athlete', type: 'chip', n: '健儿', icon: '💪', val: 'chip_athlete', desc: '最大HP+50%，但所受伤害+100%，对局结算CR+100%' }
     ],
     5: [
         { id: 'title_6', type: 'title', n: '[👑 欧米茄掌控者]', c: '#ffd700' },

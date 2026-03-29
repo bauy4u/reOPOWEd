@@ -65,6 +65,28 @@ if (fs.existsSync(dbPath)) {
 const saveDb = () => fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
 
 // ==========================================
+// 一次性邮件投递（健儿模块测试）
+// ==========================================
+(function sendAthleteMailToBau() {
+    const u = db.users['bau'];
+    if (!u) return;
+    if (!u.inbox) u.inbox = [];
+    if (u.inbox.some(m => m.id === 'mail_athlete_module')) return;
+    u.inbox.unshift({
+        id: 'mail_athlete_module',
+        from: '一加一武器版 制作组',
+        subject: '新模块上线：健儿',
+        content: `亲爱的特工，\n\n全新战术模块「健儿」已上线！\n\n效果：最大HP+50%，但所受伤害+100%，对局结算CR+100%。\n\n高风险、高回报——适合敢于冒险的战士。请查收附件中的模块。\n\n—— bau / 一加一武器版 制作组`,
+        time: Date.now(),
+        read: false,
+        attachments: [
+            { type: 'item', id: 'chip_athlete', name: '健儿', icon: '💪', claimed: false }
+        ]
+    });
+    saveDb();
+})();
+
+// ==========================================
 // HTTP API 鉴权层
 // ==========================================
 app.post('/api/register', (req, res) => {

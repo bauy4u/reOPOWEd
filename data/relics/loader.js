@@ -6,6 +6,7 @@ require('./relic_medic');
 require('./relic_fury');
 require('./relic_assassin');
 require('./relic_hacker');
+require('./relic_athlete');
 
 // 导出注册表方法
 const { getRelic, getAllRelics } = require('./index');
