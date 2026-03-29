@@ -376,8 +376,8 @@ io.on('connection', (socket) => {
     // 大厅与房间系统事件
     // ==========================================
     socket.on('create_room', (data) => {
-        const { user, max, hp } = data;
-        const room = roomManager.createRoom(user, max, hp, socket.id);
+        const { user, max, hp, mode } = data;
+        const room = roomManager.createRoom(user, max, hp, socket.id, mode);
         socket.join(room.id);
         socket.emit('room_created', room);
         io.emit('lobby_rooms_update', roomManager.getPublicRooms());

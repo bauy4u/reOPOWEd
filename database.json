@@ -417,15 +417,15 @@
       "id": "u_9jnekewoh",
       "stats": {
         "wins": 0,
-        "matches": 1
+        "matches": 2
       },
       "quests": {
         "kills": 0,
-        "matches": 1,
+        "matches": 2,
         "dmg": 0
       },
       "economy": {
-        "credits": 26390,
+        "credits": 26420,
         "unlocks": [
           "stars",
           "grid",
@@ -469,7 +469,7 @@
       "friendRequests": [],
       "messages": {},
       "invites": [],
-      "status": "lobby",
+      "status": "offline",
       "recentPlayers": [],
       "inbox": [
         {

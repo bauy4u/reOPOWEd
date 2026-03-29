@@ -114,6 +114,7 @@ const LobbyScreen = ({ user, onJoinRoom, onLogout, lang, setLang }) => {
     const t = I18N[lang];
     const [rooms, setRooms] = useState([]);
     const [showCreateModal, setShowCreateModal] = useState(false); const [createSettings, setCreateSettings] = useState({ max: 2, hp: 10 });
+    const [createMode, setCreateMode] = useState('classic');
     const [showProfile, setShowProfile] = useState(false); const [showSettings, setShowSettings] = useState(false); const [settingsTab, setSettingsTab] = useState('basic');
     const [showMarket, setShowMarket] = useState(false); const [marketCat, setMarketCat] = useState('frame'); const [showDB, setShowDB] = useState(false);
     const [showWarp, setShowWarp] = useState(false); const [showMods, setShowMods] = useState(false);
@@ -152,7 +153,7 @@ const LobbyScreen = ({ user, onJoinRoom, onLogout, lang, setLang }) => {
     }, []);
 
     const confirmCreate = () => {
-        socket.emit('create_room', { user, max: createSettings.max, hp: createSettings.hp });
+        socket.emit('create_room', { user, max: createMode==='team' ? 4 : createSettings.max, hp: createSettings.hp, mode: createMode });
         setShowCreateModal(false);
     };
 
@@ -481,12 +482,19 @@ const LobbyScreen = ({ user, onJoinRoom, onLogout, lang, setLang }) => {
                     <div className="glass-panel-heavy p-6 md:p-8 rounded-2xl w-[90vw] md:w-[400px] flex flex-col gap-6 animate-float-up" style={{ animation: 'none', transform: 'none' }}>
                         <h2 className="text-lg md:text-xl font-bold flex items-center gap-2 text-brand-cyan tracking-widest"><IconSettings/> {t.create_title}</h2>
                         <div>
+                            <label className="text-xs text-gray-400 mb-2 block uppercase tracking-wider font-mono">模式</label>
+                            <div className="flex gap-3">
+                                <button className={`cyber-btn flex-1 py-2 md:py-3 font-bold transition text-xs md:text-sm ${createMode==='classic' ? 'bg-brand-cyan text-black shadow-[0_0_15px_rgba(0,240,255,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`} onClick={()=>setCreateMode('classic')}>经典</button>
+                                <button className={`cyber-btn flex-1 py-2 md:py-3 font-bold transition text-xs md:text-sm ${createMode==='team' ? 'bg-brand-purple text-white shadow-[0_0_15px_rgba(138,43,226,0.5)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`} onClick={()=>{setCreateMode('team'); setCreateSettings({...createSettings, max:4});}}>2v2 团队战</button>
+                            </div>
+                        </div>
+                        {createMode !== 'team' && <div>
                             <label className="text-xs text-gray-400 mb-2 block uppercase tracking-wider font-mono">{t.create_max}</label>
                             <div className="flex gap-3">
                                 <button className={`cyber-btn flex-1 py-2 md:py-3 font-bold transition text-xs md:text-sm ${createSettings.max===2 ? 'bg-brand-cyan text-black shadow-[0_0_15px_rgba(0,240,255,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`} onClick={()=>setCreateSettings({...createSettings, max:2})}>1 v 1</button>
                                 <button className={`cyber-btn flex-1 py-2 md:py-3 font-bold transition text-xs md:text-sm ${createSettings.max===4 ? 'bg-brand-purple text-white shadow-[0_0_15px_rgba(138,43,226,0.5)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`} onClick={()=>setCreateSettings({...createSettings, max:4})}>4 Players</button>
                             </div>
-                        </div>
+                        </div>}
                         <div>
                             <label className="text-xs text-gray-400 mb-2 block uppercase tracking-wider font-mono">{t.create_hp}</label>
                             <input type="range" min="5" max="20" step="1" value={createSettings.hp} onChange={e=>setCreateSettings({...createSettings, hp: parseInt(e.target.value)})} className="w-full accent-brand-pink" />

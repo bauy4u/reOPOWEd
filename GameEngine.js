@@ -16,15 +16,12 @@ class GameEngine {
 
     _makeCtx(roomId, state) {
         return {
-            io: this.io,
-            roomId,
-            state,
+            io: this.io, roomId, state,
             emit: (event, data) => this.io.to(roomId).emit(event, data),
             log: (text, type) => this.io.to(roomId).emit('system_log', { text, type: type || 'info' })
         };
     }
 
-    // Fix 2: 服务端倒计时，超时自动结束回合
     _startTurnTimer(roomId) {
         this._clearTurnTimer(roomId);
         this.turnTimers[roomId] = setTimeout(() => {
@@ -39,28 +36,32 @@ class GameEngine {
     }
 
     _clearTurnTimer(roomId) {
-        if (this.turnTimers[roomId]) {
-            clearTimeout(this.turnTimers[roomId]);
-            delete this.turnTimers[roomId];
-        }
+        if (this.turnTimers[roomId]) { clearTimeout(this.turnTimers[roomId]); delete this.turnTimers[roomId]; }
     }
+
+    isTeamMode(room) { return room.mode === 'team'; }
+
+    sameTeam(a, b) { return a.team !== undefined && b.team !== undefined && a.team === b.team; }
 
     startGame(room) {
         room.status = 'playing';
         const initialHp = Number(room.hp) || 10;
+        const isTeam = this.isTeamMode(room);
 
         room.gameState = {
             phase: 'SELECT_OWN',
             turnIndex: 0,
             turnStartAt: Date.now(),
             matchStats: {},
-            players: room.players.map(p => {
+            mode: room.mode || 'classic',
+            players: room.players.map((p, idx) => {
                 const playerState = {
                     id: p.id, name: p.username,
                     hp: initialHp, maxHp: initialHp,
                     hands: [1, 1], shield: false, swordLevel: 1, power: false, isDead: false,
-                    isBot: p.isBot, chip: p.chip, avatar: p.avatar, frame: p.frame, ring: p.ring, title: p.title,
-                    cardSkin: p.cardSkin, relicState: null
+                    isBot: p.isBot, chip: p.chip, avatar: p.avatar, frame: p.frame,
+                    ring: p.ring, title: p.title, cardSkin: p.cardSkin, relicState: null,
+                    team: isTeam ? (idx < 2 ? 0 : 1) : 0
                 };
                 room.gameState = room.gameState || {};
                 if (!room.gameState.matchStats) room.gameState.matchStats = {};
@@ -79,11 +80,8 @@ class GameEngine {
         this.io.to(room.id).emit('game_started', room);
         this.io.to(room.id).emit('system_log', { text: '>>> 竞技场初始化完毕。欧米茄协议生效。 <<<', type: 'system' });
 
-        // 首回合倒计时
         const firstPlayer = room.gameState.players[0];
-        if (firstPlayer && !firstPlayer.isBot) {
-            this._startTurnTimer(room.id);
-        }
+        if (firstPlayer && !firstPlayer.isBot) this._startTurnTimer(room.id);
         this.checkBotTurn(room.id);
     }
 
@@ -98,8 +96,9 @@ class GameEngine {
         const targetP = state.players.find(p => p.id === targetId);
         if (!targetP) return;
         if (targetP.hands[targetHandIdx] === 0) return;
+        // 团队模式不能加队友的牌（加自己的和加敌方的可以）
+        if (this.isTeamMode(room) && this.sameTeam(currentPlayer, targetP) && targetP.id !== currentPlayer.id) return;
 
-        // 玩家操作了，重置计时器
         this._clearTurnTimer(roomId);
 
         const myVal = currentPlayer.hands[myHandIdx];
@@ -127,7 +126,7 @@ class GameEngine {
             state.phase = 'SELECT_TNT_TARGET'; state.activeHandIdx = myHandIdx;
             this.io.to(roomId).emit('phase_changed', state);
         } else {
-            const actions = this.evaluateActions(currentPlayer, myHandIdx, ctx);
+            const actions = this.evaluateActions(currentPlayer, myHandIdx, ctx, room, state);
             if (actions.length > 0) {
                 state.phase = 'ACTION_MENU'; state.availableActions = actions; state.activeHandIdx = myHandIdx;
                 this.io.to(roomId).emit('phase_changed', state);
@@ -145,19 +144,22 @@ class GameEngine {
 
         this._clearTurnTimer(roomId);
 
+        // 团队模式不能炸队友
+        const target = state.players.find(p => p.id === targetId);
+        if (target && this.isTeamMode(room) && this.sameTeam(currentPlayer, target)) return;
+
         let dmg = 1.5;
         const relic = getRelic(currentPlayer.chip);
         if (relic) dmg = relic.modifyOutgoingDamage(currentPlayer, null, dmg, 'tnt', ctx);
 
         this.applyDamage(roomId, currentPlayer, targetId, dmg, false);
 
-        const target = state.players.find(p => p.id === targetId);
         if (relic) relic.onTntDetonated(currentPlayer, target, ctx);
 
         this.io.to(roomId).emit('tnt_executed', { players: state.players });
 
         setTimeout(() => {
-            const actions = this.evaluateActions(currentPlayer, state.activeHandIdx, ctx);
+            const actions = this.evaluateActions(currentPlayer, state.activeHandIdx, ctx, room, state);
             if (actions.length > 0) {
                 state.phase = 'ACTION_MENU'; state.availableActions = actions;
                 this.io.to(roomId).emit('phase_changed', state);
@@ -174,13 +176,17 @@ class GameEngine {
         this._clearTurnTimer(roomId);
 
         if (action.type === 'COMBO') {
-            if (action.id === 'forge') currentPlayer.swordLevel++;
-            if (action.id === 'power') currentPlayer.power = true;
+            // targetId 可以是队友（团队模式下 forge/power/heal 可指向队友）
+            const target = targetId ? state.players.find(p => p.id === targetId) : currentPlayer;
+            const applyTo = target || currentPlayer;
+
+            if (action.id === 'forge') applyTo.swordLevel++;
+            if (action.id === 'power') applyTo.power = true;
             if (action.id === 'heal') {
-                currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + 2);
-                this.io.to(roomId).emit('vfx_trigger', { type: 'heal', targetId: currentPlayer.id, text: '+2', color: '#00ff00' });
+                applyTo.hp = Math.min(applyTo.maxHp, applyTo.hp + 2);
+                this.io.to(roomId).emit('vfx_trigger', { type: 'heal', targetId: applyTo.id, text: '+2', color: '#00ff00' });
             }
-            this.io.to(roomId).emit('system_log', { text: `[技能] ${currentPlayer.name} 发动了 ${action.name}!`, type: 'combat' });
+            this.io.to(roomId).emit('system_log', { text: `[技能] ${currentPlayer.name} 对 ${applyTo.name} 发动了 ${action.name}!`, type: 'combat' });
             this.endTurn(roomId);
 
         } else if (action.type === 'ATTACK') {
@@ -213,21 +219,34 @@ class GameEngine {
             }, 500);
 
         } else if (action.type === 'RELIC') {
-            // Fix 5: 黑客大招 — 委托给圣遗物的 executeRelicAction
             const relic = getRelic(currentPlayer.chip);
-            if (relic && relic.executeRelicAction) {
-                relic.executeRelicAction(currentPlayer, action, ctx);
-            }
+            if (relic && relic.executeRelicAction) relic.executeRelicAction(currentPlayer, action, ctx);
             this.endTurn(roomId);
         }
     }
 
-    evaluateActions(player, changedHandIdx, ctx) {
+    evaluateActions(player, changedHandIdx, ctx, room, state) {
         const actions = [];
         const hStr = [...player.hands].sort().join(',');
-        if (hStr === '4,5') actions.push({ type: 'COMBO', id: 'forge', name: '锻造 (剑升1级)' });
-        if (hStr === '8,8') actions.push({ type: 'COMBO', id: 'power', name: '力量过载 (下次伤害x2)' });
-        if (hStr === '9,9') actions.push({ type: 'COMBO', id: 'heal', name: '强效治疗 (恢复2HP)' });
+        const isTeam = room && this.isTeamMode(room);
+
+        // 获取存活队友
+        const aliveAlly = isTeam && state
+            ? state.players.find(p => !p.isDead && p.id !== player.id && this.sameTeam(player, p))
+            : null;
+
+        if (hStr === '4,5') {
+            actions.push({ type: 'COMBO', id: 'forge', name: '锻造 (我的剑升1级)', targetId: null });
+            if (aliveAlly) actions.push({ type: 'COMBO', id: 'forge', name: `锻造 (${aliveAlly.name}的剑升1级)`, targetId: aliveAlly.id });
+        }
+        if (hStr === '8,8') {
+            actions.push({ type: 'COMBO', id: 'power', name: '力量过载 (我)', targetId: null });
+            if (aliveAlly) actions.push({ type: 'COMBO', id: 'power', name: `力量过载 (${aliveAlly.name})`, targetId: aliveAlly.id });
+        }
+        if (hStr === '9,9') {
+            actions.push({ type: 'COMBO', id: 'heal', name: '强效治疗 (我+2血)', targetId: null });
+            if (aliveAlly) actions.push({ type: 'COMBO', id: 'heal', name: `强效治疗 (${aliveAlly.name}+2血)`, targetId: aliveAlly.id });
+        }
 
         const hasBow = player.hands.includes(7);
         const hasCrossbow = player.hands.includes(8);
@@ -258,8 +277,10 @@ class GameEngine {
         const target = state.players.find(p => p.id === targetId);
         const ctx = this._makeCtx(roomId, state);
 
-        let finalDmg = attacker.power ? damage * 2 : damage;
+        // 团队模式禁止伤害队友
+        if (this.isTeamMode(room) && this.sameTeam(attacker, target)) return;
 
+        let finalDmg = attacker.power ? damage * 2 : damage;
         if (isNormal && target.shield) finalDmg = Math.max(0, finalDmg - 0.5);
 
         const targetRelic = getRelic(target.chip);
@@ -286,9 +307,7 @@ class GameEngine {
         state.matchStats[target.id].dmgTaken += finalDmg;
         if (isKilled) state.matchStats[attacker.id].kills += 1;
 
-        if (finalDmg > 0) {
-            this.io.to(roomId).emit('vfx_trigger', { type: 'dmg', targetId: target.id, text: `-${finalDmg}`, color: '#ff007f' });
-        }
+        if (finalDmg > 0) this.io.to(roomId).emit('vfx_trigger', { type: 'dmg', targetId: target.id, text: `-${finalDmg}`, color: '#ff007f' });
         this.io.to(roomId).emit('system_log', { text: `[攻击] ${attacker.name} 对 ${target.name} 造成 ${finalDmg} 伤害。`, type: 'combat' });
         this.io.to(roomId).emit('state_update', state);
     }
@@ -308,7 +327,6 @@ class GameEngine {
 
     endTurn(roomId) {
         this._clearTurnTimer(roomId);
-
         const room = this.roomManager.getRoom(roomId);
         if (!room || room.status !== 'playing') return;
         const state = room.gameState;
@@ -320,9 +338,22 @@ class GameEngine {
             if (relic) relic.onTurnEnd(currentPlayer, ctx);
         }
 
+        // 胜负判断
         const alivePlayers = state.players.filter(p => !p.isDead);
-        if (alivePlayers.length <= 1) {
-            this._endGame(room, roomId, state, alivePlayers);
+        let gameOver = false;
+        let winner = null;
+
+        if (this.isTeamMode(room)) {
+            const team0alive = alivePlayers.filter(p => p.team === 0);
+            const team1alive = alivePlayers.filter(p => p.team === 1);
+            if (team0alive.length === 0) { gameOver = true; winner = team1alive[0] || null; }
+            else if (team1alive.length === 0) { gameOver = true; winner = team0alive[0] || null; }
+        } else {
+            if (alivePlayers.length <= 1) { gameOver = true; winner = alivePlayers[0] || null; }
+        }
+
+        if (gameOver) {
+            this._endGame(room, roomId, state, winner);
             return;
         }
 
@@ -343,20 +374,14 @@ class GameEngine {
         }
 
         this.io.to(roomId).emit('phase_changed', state);
-
-        // Fix 2: 只有真人回合才开启服务端计时
-        if (nextPlayer && !nextPlayer.isBot) {
-            this._startTurnTimer(roomId);
-        }
-
+        if (nextPlayer && !nextPlayer.isBot) this._startTurnTimer(roomId);
         this.checkBotTurn(roomId);
     }
 
-    _endGame(room, roomId, state, alivePlayers) {
+    _endGame(room, roomId, state, winner) {
         this._clearTurnTimer(roomId);
         room.status = 'game_over';
         state.phase = 'GAME_OVER';
-        const winner = alivePlayers[0] || null;
 
         const othersNames = room.players.filter(p => !p.isBot).map(p => p.username);
         room.players.forEach(p => {
@@ -364,7 +389,10 @@ class GameEngine {
             const u = this.db.users[p.username];
             if (!u) return;
 
-            const isWin = winner && winner.id === p.id;
+            const isWin = this.isTeamMode(room)
+                ? winner && state.players.find(gp => gp.id === p.id)?.team === winner.team
+                : winner && winner.id === p.id;
+
             const myStats = state.matchStats[p.id] || { kills: 0, dmgDealt: 0 };
             let baseEarned = (isWin ? 100 : 30) + (myStats.kills * 20);
             let qBonus = 0;

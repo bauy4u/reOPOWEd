@@ -207,12 +207,11 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
 
     const handleActionSelect = (action) => {
         if (action.type === 'COMBO') {
-            socket.emit('execute_action', { roomId: roomState.id, userId: user.id, action, targetId: null });
+            socket.emit('execute_action', { roomId: roomState.id, userId: user.id, action, targetId: action.targetId || null });
         } else if (action.type === 'RELIC') {
             socket.emit('execute_action', { roomId: roomState.id, userId: user.id, action, targetId: null });
         } else if (action.type === 'ATTACK') {
             setPendingAction(action);
-            // Tell server we changed local visual phase (not strictly needed by server, but good for local UX)
             setRoomState(prev => ({...prev, gameState: {...prev.gameState, phase: 'SELECT_ACTION_TARGET'}}));
         }
     };
@@ -229,8 +228,17 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
         return () => clearInterval(timer);
     }, [roomState?.gameState?.turnIndex, gameStarted]);
 
-    // Render positioning (Mobile friendly adjustments)
-    const getSeatStyle = (total, visualIdx) => {
+    // Render positioning — team mode has ally-bottom / enemy-top layout
+    const isTeamMode = roomState?.gameState?.mode === 'team' || roomState?.mode === 'team';
+
+    const getSeatStyle = (total, visualIdx, teamSlot) => {
+        if (isTeamMode && total === 4) {
+            // teamSlot: 'ally0','ally1','enemy0','enemy1'
+            if (teamSlot === 'ally0')  return { bottom: '8%',  left: '30%', transform: 'translate(-50%, 0) scale(0.85)' };
+            if (teamSlot === 'ally1')  return { bottom: '8%',  left: '70%', transform: 'translate(-50%, 0) scale(0.85)' };
+            if (teamSlot === 'enemy0') return { top: '6%', left: '30%', transform: 'translate(-50%, 0) scale(0.85)' };
+            if (teamSlot === 'enemy1') return { top: '6%', left: '70%', transform: 'translate(-50%, 0) scale(0.85)' };
+        }
         if (visualIdx === 0) return { top: '80%', left: '50%', transform: 'translate(-50%, -50%) scale(0.9)' };
         if (total === 2 && visualIdx === 1) return { top: '20%', left: '50%', transform: 'translate(-50%, -50%) scale(0.9)' };
         if (total === 3) {
@@ -254,12 +262,29 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
     const isMeTurnNow = gameStarted && currentPlayerTurn?.id === user.id && !currentPlayerTurn.isDead;
 
     const visualPlayers = useMemo(() => {
+        if (isTeamMode && players.length === 4) {
+            // 团队模式：找到我的team，将我的队友和我放底部，敌人放顶部
+            const me = players.find(p => p.id === user.id);
+            if (!me) return players;
+            const myTeam = me.team;
+            const allies = players.filter(p => p.team === myTeam);
+            const enemies = players.filter(p => p.team !== myTeam);
+            // 返回顺序：[ally0, ally1, enemy0, enemy1]，并附加teamSlot信息
+            return [
+                { ...allies[0], _teamSlot: 'ally0' },
+                { ...allies[1], _teamSlot: 'ally1' },
+                { ...(enemies[0] || {}), _teamSlot: 'enemy0' },
+                { ...(enemies[1] || {}), _teamSlot: 'enemy1' }
+            ].filter(p => p.id);
+        }
         const meIdx = players.findIndex(p => p.id === user.id); if(meIdx === -1) return players;
         const ordered = []; for(let i=0; i<players.length; i++) ordered.push(players[(meIdx + i) % players.length]); return ordered;
-    }, [players, user.id]);
+    }, [players, user.id, isTeamMode]);
 
     const activeVisualIdx = visualPlayers.findIndex(p => p.id === currentPlayerTurn?.id);
-    const activeIndicatorStyle = gameStarted && activeVisualIdx !== -1 && statePhase !== 'GAME_OVER' ? getSeatStyle(players.length, activeVisualIdx) : { opacity: 0 };
+    const activeIndicatorStyle = gameStarted && activeVisualIdx !== -1 && statePhase !== 'GAME_OVER'
+        ? getSeatStyle(players.length, activeVisualIdx, visualPlayers[activeVisualIdx]?._teamSlot)
+        : { opacity: 0 };
 
     return (
         <div className={`min-h-screen absolute inset-0 overflow-hidden w-full ${shake ? 'animate-shake' : ''}`}>
@@ -437,7 +462,11 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
             </div>
 
             {visualPlayers.map((p, i) => {
-                const isMe = p.id === user.id; const seatStyle = getSeatStyle(players.length, i);
+                const isMe = p.id === user.id;
+                const seatStyle = getSeatStyle(players.length, i, p._teamSlot);
+                // 团队模式：队友不可被攻击，但可被选为TNT或攻击的目标时过滤掉
+                const isAlly = isTeamMode && !isMe && p.team !== undefined
+                    && p.team === players.find(pl => pl.id === user.id)?.team;
 
                 const pHands = p.hands || [1, 1];
                 const pHp = p.hp !== undefined ? p.hp : (roomState.hp || 10);
@@ -446,11 +475,13 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
                 const pShield = p.shield || false;
 
                 const leftOwn = selectedOwn?.handIndex === 0 && isMe; const rightOwn = selectedOwn?.handIndex === 1 && isMe;
-                const leftTargetable = (statePhase === 'SELECT_TARGET' || (selectedOwn && isMeTurnNow)) && !isMe && pHands[0] !== 0;
-                const rightTargetable = (statePhase === 'SELECT_TARGET' || (selectedOwn && isMeTurnNow)) && !isMe && pHands[1] !== 0;
+                // 团队模式队友不可作为攻击目标
+                const canTarget = !isMe && !isAlly;
+                const leftTargetable = (statePhase === 'SELECT_TARGET' || (selectedOwn && isMeTurnNow)) && canTarget && pHands[0] !== 0;
+                const rightTargetable = (statePhase === 'SELECT_TARGET' || (selectedOwn && isMeTurnNow)) && canTarget && pHands[1] !== 0;
                 const leftIsTarget = selectedTarget?.playerId === p.id && selectedTarget?.handIndex === 0; const rightIsTarget = selectedTarget?.playerId === p.id && selectedTarget?.handIndex === 1;
-                const leftZeroLocked = (statePhase === 'SELECT_TARGET' || (selectedOwn && isMeTurnNow)) && !isMe && pHands[0] === 0;
-                const rightZeroLocked = (statePhase === 'SELECT_TARGET' || (selectedOwn && isMeTurnNow)) && !isMe && pHands[1] === 0;
+                const leftZeroLocked = (statePhase === 'SELECT_TARGET' || (selectedOwn && isMeTurnNow)) && canTarget && pHands[0] === 0;
+                const rightZeroLocked = (statePhase === 'SELECT_TARGET' || (selectedOwn && isMeTurnNow)) && canTarget && pHands[1] === 0;
                 const cSkin = getCardClass(p.cardSkin);
 
                 let tCol = '#00f0ff';
@@ -523,7 +554,11 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
                             </div>
                         </div>
                         <div className="absolute top-[75px] md:top-[90px] left-1/2 transform -translate-x-1/2 glass-panel px-3 md:px-5 py-1.5 md:py-2 rounded-xl text-center min-w-[120px] md:min-w-[160px] z-10 mt-2">
-                            <div className={`font-black text-xs md:text-sm truncate tracking-wide ${isMe ? 'text-brand-cyan' : 'text-white'}`}>{p.name}</div>
+                            <div className="flex items-center justify-center gap-1 flex-wrap">
+                                <div className={`font-black text-xs md:text-sm truncate tracking-wide ${isMe ? 'text-brand-cyan' : isAlly ? 'text-green-400' : 'text-white'}`}>{p.name}</div>
+                                {isTeamMode && <div className={`text-[8px] font-bold px-1 rounded ${isAlly||isMe ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{isAlly||isMe?'我方':'敌方'}</div>}
+                                {p.swordLevel > 1 && <div className="text-[8px] font-bold text-brand-gold bg-brand-gold/20 px-1 rounded">⚔Lv{p.swordLevel}</div>}
+                            </div>
                             <div className="w-full bg-gray-900 h-1.5 md:h-2 rounded-full mt-1.5 md:mt-2 overflow-hidden border border-white/5"><div className="h-full bg-gradient-to-r from-brand-pink to-brand-cyan transition-all duration-300" style={{ width: `${Math.max(0, (pHp/pMaxHp)*100)}%` }}></div></div>
                             <div className="text-[10px] md:text-xs font-mono mt-1 md:mt-1.5 text-gray-400 font-bold tracking-widest">{t.stat_hp}: {pHp.toFixed(1)} / {pMaxHp}</div>
                             {relicVFX?.renderStatusBar(p, relicState)}
