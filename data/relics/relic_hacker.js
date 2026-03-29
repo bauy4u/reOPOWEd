@@ -88,11 +88,13 @@ class RelicHacker extends RelicBase {
         // 延迟300ms再结算伤害，给VFX动画时间
         setTimeout(() => {
             const otherPlayers = ctx.state.players.filter(p => !p.isDead && p.id !== player.id);
+            // 大招伤害固定为2，不受 power buff 影响，临时移除 power 状态
+            const hadPower = player.power;
+            player.power = false;
             otherPlayers.forEach(target => {
                 ctx.applyDamage(player, target.id, 2, false);
-                ctx.emit('vfx_trigger', { type: 'dmg', targetId: target.id, text: '-2', color: '#00ff00' });
-                ctx.log(`[黑客] ${target.name} 受到 2 渗透伤害！`, 'combat');
             });
+            player.power = hadPower;
 
             player.hp = Math.min(player.maxHp, player.hp + 2);
             ctx.emit('vfx_trigger', { type: 'heal', targetId: player.id, text: '+2', color: '#00ff00' });
