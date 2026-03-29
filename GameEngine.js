@@ -15,10 +15,14 @@ class GameEngine {
     }
 
     _makeCtx(roomId, state) {
+        const self = this;
         return {
             io: this.io, roomId, state,
             emit: (event, data) => this.io.to(roomId).emit(event, data),
-            log: (text, type) => this.io.to(roomId).emit('system_log', { text, type: type || 'info' })
+            log: (text, type) => this.io.to(roomId).emit('system_log', { text, type: type || 'info' }),
+            applyDamage: (attacker, targetId, damage, isNormal) => self.applyDamage(roomId, attacker, targetId, damage, isNormal),
+            updateShield: (player) => self._updateShield(player),
+            syncRelicStates: () => self._syncRelicStates(state)
         };
     }
 
@@ -120,15 +124,18 @@ class GameEngine {
 
         if (relic) relic.onHandChanged(currentPlayer, myHandIdx, newVal, ctx);
 
+        this._syncRelicStates(state);
         this.io.to(roomId).emit('math_executed', { players: state.players });
 
         if (newVal === 0) {
             state.phase = 'SELECT_TNT_TARGET'; state.activeHandIdx = myHandIdx;
+            this._syncRelicStates(state);
             this.io.to(roomId).emit('phase_changed', state);
         } else {
             const actions = this.evaluateActions(currentPlayer, myHandIdx, ctx, room, state);
             if (actions.length > 0) {
                 state.phase = 'ACTION_MENU'; state.availableActions = actions; state.activeHandIdx = myHandIdx;
+                this._syncRelicStates(state);
                 this.io.to(roomId).emit('phase_changed', state);
             } else {
                 this.endTurn(roomId);
@@ -156,12 +163,14 @@ class GameEngine {
 
         if (relic) relic.onTntDetonated(currentPlayer, target, ctx);
 
+        this._syncRelicStates(state);
         this.io.to(roomId).emit('tnt_executed', { players: state.players });
 
         setTimeout(() => {
             const actions = this.evaluateActions(currentPlayer, state.activeHandIdx, ctx, room, state);
             if (actions.length > 0) {
                 state.phase = 'ACTION_MENU'; state.availableActions = actions;
+                this._syncRelicStates(state);
                 this.io.to(roomId).emit('phase_changed', state);
             } else { this.endTurn(roomId); }
         }, 500);
@@ -191,6 +200,7 @@ class GameEngine {
 
         } else if (action.type === 'ATTACK') {
             state.phase = 'ANIMATING';
+            this._syncRelicStates(state);
             this.io.to(roomId).emit('phase_changed', state);
 
             let baseDmg = 0;
@@ -309,6 +319,7 @@ class GameEngine {
 
         if (finalDmg > 0) this.io.to(roomId).emit('vfx_trigger', { type: 'dmg', targetId: target.id, text: `-${finalDmg}`, color: '#ff007f' });
         this.io.to(roomId).emit('system_log', { text: `[攻击] ${attacker.name} 对 ${target.name} 造成 ${finalDmg} 伤害。`, type: 'combat' });
+        this._syncRelicStates(state);
         this.io.to(roomId).emit('state_update', state);
     }
 
@@ -323,6 +334,15 @@ class GameEngine {
         const relic = getRelic(player.chip);
         if (relic) hasShield = relic.modifyShield(player, hasShield);
         player.shield = hasShield;
+    }
+
+    _syncRelicStates(state) {
+        state.players.forEach(p => {
+            const relic = getRelic(p.chip);
+            if (relic && relic.getCustomState) {
+                p.relicState = relic.getCustomState(p);
+            }
+        });
     }
 
     endTurn(roomId) {
@@ -373,6 +393,7 @@ class GameEngine {
             this._updateShield(nextPlayer);
         }
 
+        this._syncRelicStates(state);
         this.io.to(roomId).emit('phase_changed', state);
         if (nextPlayer && !nextPlayer.isBot) this._startTurnTimer(roomId);
         this.checkBotTurn(roomId);

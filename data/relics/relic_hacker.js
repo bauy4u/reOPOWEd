@@ -89,26 +89,15 @@ class RelicHacker extends RelicBase {
         setTimeout(() => {
             const otherPlayers = ctx.state.players.filter(p => !p.isDead && p.id !== player.id);
             otherPlayers.forEach(target => {
-                target.hp = Math.max(0, target.hp - 2);
+                ctx.applyDamage(player, target.id, 2, false);
                 ctx.emit('vfx_trigger', { type: 'dmg', targetId: target.id, text: '-2', color: '#00ff00' });
                 ctx.log(`[黑客] ${target.name} 受到 2 渗透伤害！`, 'combat');
-
-                if (!ctx.state.matchStats) ctx.state.matchStats = {};
-                if (!ctx.state.matchStats[player.id]) ctx.state.matchStats[player.id] = { dmgDealt: 0, dmgTaken: 0, kills: 0 };
-                if (!ctx.state.matchStats[target.id]) ctx.state.matchStats[target.id] = { dmgDealt: 0, dmgTaken: 0, kills: 0 };
-                ctx.state.matchStats[player.id].dmgDealt += 2;
-                ctx.state.matchStats[target.id].dmgTaken += 2;
-
-                if (target.hp === 0 && !target.isDead) {
-                    target.isDead = true;
-                    ctx.log(`>>> ${target.name} 被处决了! <<<`, 'system');
-                    ctx.state.matchStats[player.id].kills += 1;
-                }
             });
 
             player.hp = Math.min(player.maxHp, player.hp + 2);
             ctx.emit('vfx_trigger', { type: 'heal', targetId: player.id, text: '+2', color: '#00ff00' });
             ctx.log(`[黑客] ${player.name} 回复 2 生命值！渗透门户已失效。`, 'combat');
+            ctx.syncRelicStates();
             ctx.emit('state_update', ctx.state);
         }, 300);
     }

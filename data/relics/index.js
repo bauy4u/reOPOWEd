@@ -27,7 +27,7 @@ class RelicBase {
     // 受到伤害前：可拦截/修改伤害值
     modifyIncomingDamage(target, attacker, damage, isNormal, ctx) { return damage; }
 
-    // 伤害结算后 (仅对普通攻击触发)
+    // 伤害结算后 (对所有伤害类型触发，isNormal 参数区分类型)
     onDamageDealt(attacker, target, finalDmg, isNormal, ctx) {}
 
     // TNT 引爆结算后
@@ -38,6 +38,9 @@ class RelicBase {
 
     // 回合结束时
     onTurnEnd(player, ctx) {}
+
+    // 执行圣遗物专属行动 (由 executeAction RELIC 分支调用)
+    executeRelicAction(player, action, ctx) {}
 
     // 返回自定义状态对象，附加到 player.relicState 发送给前端用于VFX
     getCustomState(player) { return null; }
