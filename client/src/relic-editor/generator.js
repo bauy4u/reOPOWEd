@@ -196,13 +196,12 @@ jsonGen.forBlock['action_emit_vfx'] = function (block) {
 // 五、控制块  
 // ==========================================  
   
-jsonGen.forBlock['control_if'] = function (block) {  
-    const condition = valCode(block, 'CONDITION', { type: 'literal', value: true });  
-    const thenBody = stmtArray(block, 'THEN');  
-    const elseBody = stmtArray(block, 'ELSE');  
-    const node = `{"type":"if","condition":${condition},"then":${thenBody},"else":${elseBody}}`;  
-    return node + ',\n';  
-};  
+jsonGen.forBlock['control_if'] = function (block) {    
+    const condition = valCode(block, 'CONDITION', { type: 'literal', value: true });    
+    const thenBody = stmtArray(block, 'THEN');    
+    const node = `{"type":"if","condition":${condition},"then":${thenBody},"else":[]}`;    
+    return node + ',\n';    
+};
   
 // 🔧 修复: 添加漏掉的 control_if_else，它的逻辑和 control_if 一致（Blockly 的机制也是提取同样的输入）
 jsonGen.forBlock['control_if_else'] = function (block) {  

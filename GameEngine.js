@@ -74,6 +74,8 @@ class GameEngine {
             })
         };
 
+        loadCustomRelics(this.db, room.players);
+
         const ctx = this._makeCtx(room.id, room.gameState);  
         room.gameState.players.forEach(p => {  
             const relic = getRelic(p.chip);  
