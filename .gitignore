@@ -4,3 +4,4 @@ package-lock.json
 database.json
 client/node_modules/
 client/package-lock.json
+client/dist/

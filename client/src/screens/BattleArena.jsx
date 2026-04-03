@@ -97,7 +97,7 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
                             }
                             return prev;
                         });
-                    }, 4000);
+                    }, 8000);
                 }
             },
             'game_over_state': (data) => {
@@ -531,7 +531,7 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
                                                 )}
 
                                                 {chatBubbles[p.name] && (
-                                                    <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in pointer-events-none" style={{maxWidth: '160px'}}>
+                                                    <div className="absolute -top-20 left-1/2 z-50 animate-fade-in pointer-events-none" style={{maxWidth: '220px', width: 'max-content', transform: 'translateX(-50%)'}}>
                                                         <div className="bg-black/90 border border-brand-cyan/40 rounded-lg px-2.5 py-1.5 shadow-[0_0_12px_rgba(0,240,255,0.15)]">
                                                             <p className="text-white text-[10px] md:text-xs font-mono leading-tight" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-all'}}>{chatBubbles[p.name].text}</p>
                                                         </div>
