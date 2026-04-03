@@ -1,7 +1,6 @@
 // ==========================================  
 // data/relics/interpreter.js  
 // 圣遗物解释器 — 将 JSON AST 配置解释为可运行的 RelicBase 实例  
-// 已根据 generator.js 协议进行全面同步修改
 // ==========================================  
 const { RelicBase } = require('./index');  
   
@@ -173,7 +172,6 @@ class RelicInterpreter extends RelicBase {
             }  
   
             case 'heal': {  
-                // 兼容修复：使用 node.who 匹配 generator.js
                 const who = this._resolvePlayer(node.who || node.target, player, target, locals);  
                 if (!who || who.isDead) return null;  
                 const amount = this._clampNumber(  
@@ -342,7 +340,6 @@ class RelicInterpreter extends RelicBase {
                 return player.relicState ? (player.relicState[node.key] ?? 0) : 0;  
   
             case 'local_var':  
-                // 兼容修复：匹配 generator.js 的 'name' 字段
                 return locals[node.name || node.key] ?? 0;  
   
             case 'math_op': {  
@@ -356,6 +353,10 @@ class RelicInterpreter extends RelicBase {
                     case 'mod': return b !== 0 ? a % b : 0;  
                     case 'min': return Math.min(a, b);  
                     case 'max': return Math.max(a, b);  
+                    // 🔧 修复: 补全缺失的取整运算符
+                    case 'floor': return Math.floor(a);  
+                    case 'ceil': return Math.ceil(a);  
+                    case 'round': return Math.round(a);  
                     default: return 0;  
                 }  
             }  

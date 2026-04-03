@@ -851,72 +851,7 @@ Blockly.Blocks['value_concat'] = {
     }  
 };  
   
-// ==========================================  
-// 十一、技能按钮与结果设置块  
-// ==========================================  
-  
 
-  
-Blockly.Blocks['action_set_result_damage'] = {  
-    init() {  
-        this.appendValueInput('VALUE')  
-            .setCheck('Number')  
-            .appendField('📊 设置结果伤害为');  
-        this.setColour(COLOR.COMBAT);  
-        this.setPreviousStatement(true, null);  
-        this.setNextStatement(true, null);  
-        this.setTooltip('设置伤害修改钩子的返回值。仅在 [攻击伤害计算前] 和 [受到伤害前] 钩子中使用');  
-    }  
-};  
-  
-Blockly.Blocks['action_set_shield'] = {  
-    init() {  
-        this.appendDummyInput()  
-            .appendField('🛡️ 设置护盾结果为')  
-            .appendField(new Blockly.FieldDropdown([  
-                ['有护盾 (true)', 'true'],  
-                ['无护盾 (false)', 'false']  
-            ]), 'VALUE');  
-        this.setColour(COLOR.COMBAT);  
-        this.setPreviousStatement(true, null);  
-        this.setNextStatement(true, null);  
-        this.setTooltip('设置护盾计算钩子的返回值。仅在 [护盾计算时] 钩子中使用');  
-    }  
-};  
-  
-Blockly.Blocks['action_set_result_cr'] = {  
-    init() {  
-        this.appendValueInput('VALUE')  
-            .setCheck('Number')  
-            .appendField('💰 设置CR奖励为');  
-        this.setColour(COLOR.ACTION);  
-        this.setPreviousStatement(true, null);  
-        this.setNextStatement(true, null);  
-        this.setTooltip('设置CR奖励修改钩子的返回值。仅在 [对局结算CR时] 钩子中使用');  
-    }  
-};  
-  
-Blockly.Blocks['action_temp_remove_power'] = {  
-    init() {  
-        this.appendDummyInput()  
-            .appendField('⚡ 临时移除 Power 状态');  
-        this.setColour(COLOR.COMBAT);  
-        this.setPreviousStatement(true, null);  
-        this.setNextStatement(true, null);  
-        this.setTooltip('临时移除自己的 Power 状态（88组合加成），使接下来的 applyDamage 不会翻倍。用完后记得 [恢复 Power 状态]');  
-    }  
-};  
-  
-Blockly.Blocks['action_restore_power'] = {  
-    init() {  
-        this.appendDummyInput()  
-            .appendField('⚡ 恢复 Power 状态');  
-        this.setColour(COLOR.COMBAT);  
-        this.setPreviousStatement(true, null);  
-        this.setNextStatement(true, null);  
-        this.setTooltip('恢复之前被 [临时移除 Power 状态] 移除的 Power。必须和移除配对使用');  
-    }  
-};  
   
 // ==========================================  
 // 十二、玩家属性设置块  

@@ -504,8 +504,17 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
                 const activeEmote = activeEmotes[p.id];
                 const pRank = p.id===user.id ? getRank(user.stats?.wins || 0) : getRank(Math.floor(Math.random()*100));
 
-                const allChips = [...LOOT_POOLS[4], ...LOOT_POOLS[5]].filter(item=>item.type==='chip');
-                const equippedChipData = allChips.find(c => c.id === p.chip);
+                const allChips = [...LOOT_POOLS[4], ...LOOT_POOLS[5]].filter(item=>item.type==='chip');  
+                let equippedChipData = allChips.find(c => c.id === p.chip);  
+                // ★ 自定义圣遗物 fallback：从服务端下发的 player 对象中读取 meta  
+                if (!equippedChipData && p.chip?.startsWith('custom_')) {  
+                    equippedChipData = {  
+                        id: p.chip,  
+                        icon: p.relicMeta?.icon || '⚙️',  
+                        n: p.relicMeta?.name || '自定义',  
+                        desc: p.relicMeta?.desc || ''  
+                    };  
+                }
 
                 // Relic VFX integration
                 const relicVFX = getRelicVFX(p.chip);

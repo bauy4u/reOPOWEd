@@ -1,13 +1,10 @@
-/**  
- * Blockly Toolbox 配置  
- *  
- * 定义编辑器左侧工具箱的分类结构和预置积木。  
+/** * Blockly Toolbox 配置  
+ * * 定义编辑器左侧工具箱的分类结构和预置积木。  
  * 使用 Blockly JSON toolbox 格式。  
- *  
- * 分类颜色与 blocks.js 中的 COLOR 常量保持一致：  
- *   事件 45 | 动作 160 | 日志 190 | 控制 120  
- *   属性 30 | 状态 330 | 数学 230 | 逻辑 210  
- *   特殊 280 | VFX 300  
+ * * 分类颜色与 blocks.js 中的 COLOR 常量保持一致：  
+ * 事件 45 | 动作 160 | 日志 190 | 控制 120  
+ * 属性 30 | 状态 330 | 数学 230 | 逻辑 210  
+ * 特殊 280 | VFX 300  
  */  
   
 const toolbox = {  
@@ -458,7 +455,8 @@ const toolbox = {
                                     CONDITION: {  
                                         block: {  
                                             type: 'value_hook_param',  
-                                            fields: { PARAM: 'isNormal' }  
+                                            // 🔧 修复：PARAM -> NAME
+                                            fields: { NAME: 'isNormal' }  
                                         }  
                                     },  
                                     THEN: {  
@@ -579,7 +577,8 @@ const toolbox = {
                                                 A: {  
                                                     block: {  
                                                         type: 'value_hook_param',  
-                                                        fields: { PARAM: 'actionId' }  
+                                                        // 🔧 修复：PARAM -> NAME
+                                                        fields: { NAME: 'actionId' }  
                                                     }  
                                                 },  
                                                 B: {  
@@ -603,7 +602,8 @@ const toolbox = {
                                                             A: {  
                                                                 block: {  
                                                                     type: 'value_hook_param',  
-                                                                    fields: { PARAM: 'baseDmg' }  
+                                                                    // 🔧 修复：PARAM -> NAME
+                                                                    fields: { NAME: 'baseDmg' }  
                                                                 }  
                                                             },  
                                                             B: {  

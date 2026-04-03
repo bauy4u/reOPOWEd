@@ -1,5 +1,5 @@
 const BotAI = require('./BotAI');
-const { getRelic } = require('./data/relics/loader');
+const { getRelic, loadCustomRelics } = require('./data/relics/loader');
 
 const TURN_TIMEOUT_MS = 30000;
 
@@ -74,11 +74,15 @@ class GameEngine {
             })
         };
 
-        const ctx = this._makeCtx(room.id, room.gameState);
-        room.gameState.players.forEach(p => {
-            const relic = getRelic(p.chip);
-            if (relic) relic.onGameStart(p, ctx);
-            this._updateShield(p);
+        const ctx = this._makeCtx(room.id, room.gameState);  
+        room.gameState.players.forEach(p => {  
+            const relic = getRelic(p.chip);  
+            // ★ 新增：将自定义圣遗物的 meta 附加到 player 对象，供前端显示  
+            if (relic && p.chip?.startsWith('custom_')) {  
+                p.relicMeta = relic.meta;  // { name, icon, desc }  
+            }  
+            if (relic) relic.onGameStart(p, ctx);  
+            this._updateShield(p);  
         });
 
         this.io.to(room.id).emit('game_started', room);

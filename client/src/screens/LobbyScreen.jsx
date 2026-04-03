@@ -25,20 +25,33 @@ const HexSlot = ({ icon, label, isSelected, onClick, isEmpty }) => (
     </button>
 );
 
-const ModulesScreen = ({ user, onClose, lang }) => {
-    const t = I18N[lang];
-    const [selectedChip, setSelectedChip] = useState(user.settings?.chip || '');
-    const unl = user.economy?.unlocks || [];
-    const unlockedChips = [...LOOT_POOLS[4], ...LOOT_POOLS[5]].filter(i=>i.type==='chip' && unl.includes(i.id));
-
-    const saveModule = () => {
-        socket.emit('update_settings', { chip: selectedChip }, null, null, () => {
-            playSFX('heal'); onClose();
-        });
-    };
-
-    const chipData = unlockedChips.find(c => c.id === selectedChip);
-    const allSlots = [{ id: '', icon: '✕', n: '—', desc: '', isEmpty: true }, ...unlockedChips];
+const ModulesScreen = ({ user, onClose, lang }) => {  
+    const t = I18N[lang];  
+    const [selectedChip, setSelectedChip] = useState(user.settings?.chip || '');  
+    const unl = user.economy?.unlocks || [];  
+    const unlockedChips = [...LOOT_POOLS[4], ...LOOT_POOLS[5]].filter(i=>i.type==='chip' && unl.includes(i.id));  
+  
+    // ★ 新增：将 user.customRelics 转换为与内置芯片相同的展示格式  
+    const customChips = (user.customRelics || []).map(r => ({  
+        id: r.id,  
+        type: 'chip',  
+        n: r.config?.meta?.name || '自定义圣遗物',  
+        icon: r.config?.meta?.icon || '⚙️',  
+        desc: r.config?.meta?.desc || '',  
+        isCustom: true,  
+    }));  
+    // ★ 合并内置 + 自定义  
+    const allChips = [...unlockedChips, ...customChips];  
+  
+    const saveModule = () => {  
+        socket.emit('update_settings', { chip: selectedChip }, null, null, () => {  
+            playSFX('heal'); onClose();  
+        });  
+    };  
+  
+    // ★ 修改：chipData 和 allSlots 改用 allChips  
+    const chipData = allChips.find(c => c.id === selectedChip);                          // 原第 40 行  
+    const allSlots = [{ id: '', icon: '✕', n: '—', desc: '', isEmpty: true }, ...allChips]; // 原第 41 行
 
     return (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md">
@@ -79,7 +92,7 @@ const ModulesScreen = ({ user, onClose, lang }) => {
                                     onClick={() => { setSelectedChip(c.id); playSFX('select'); }}
                                 />
                             ))}
-                            {unlockedChips.length === 0 && (
+                            {allChips.length === 0 && (
                                 <div className="text-xs text-gray-600 font-mono mt-2 w-full">{t.mod_empty}</div>
                             )}
                         </div>

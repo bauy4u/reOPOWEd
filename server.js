@@ -100,7 +100,8 @@ app.post('/api/register', (req, res) => {
         gacha: { p4: 0, p5: 0 },
         settings: { bgTheme: 'stars', avatar: '', sfx: true, bgm: false, frame: 'frame_default', cardSkin: 'card_default', title: '', ring: 'ring_default', chip: '', signature: '' },
         friends: [], friendRequests: [], messages: {}, invites: [], status: 'lobby', recentPlayers: [],
-        inbox: [createWelcomeMail()]
+        inbox: [createWelcomeMail()],
+        customRelics: []     
     };
     db.users[username] = newUser; saveDb();
     res.json({ success: true, user: newUser });
@@ -118,6 +119,7 @@ app.post('/api/login', (req, res) => {
     if (!user.gacha) user.gacha = { p4: 0, p5: 0 };
     if (!user.friends) user.friends = []; if(!user.friendRequests) user.friendRequests = []; if(!user.messages) user.messages = {}; if(!user.invites) user.invites = []; if(!user.recentPlayers) user.recentPlayers = [];
     if (!user.inbox) { user.inbox = [createWelcomeMail()]; } // 老账号补发欢迎信
+    if (!user.customRelics) user.customRelics = [];
     user.status = 'lobby'; saveDb();
 
     res.json({ success: true, user });
@@ -392,6 +394,56 @@ io.on('connection', (socket) => {
             io.to(connectedUsers[targetName]).emit('new_mail', { from: sender.username, subject: mail.subject });
         }
         if (callback) callback({ success: true });
+    });
+
+    // ==========================================  
+    // 圣遗物编辑器 API  
+    // ==========================================  
+  
+    // 获取用户的自定义圣遗物列表  
+    socket.on('relic:list', (data) => {  
+        const u = db.users[socket.username];  
+        if (!u) return;  
+        if (!u.customRelics) u.customRelics = [];  
+        socket.emit('relic:list', u.customRelics);  
+    });  
+  
+    // 保存/更新自定义圣遗物  
+    socket.on('relic:save', (data) => {  
+        const u = db.users[socket.username];  
+        if (!u) return socket.emit('relic:saved', { ok: false, error: '未登录' });  
+        if (!u.customRelics) u.customRelics = [];  
+  
+        const { relic } = data;  
+        if (!relic || !relic.id || !relic.config) {  
+            return socket.emit('relic:saved', { ok: false, error: '数据无效' });  
+        }  
+  
+        const MAX_CUSTOM_RELICS = 10;  
+  
+        // 查找是否已存在（按 id 更新）  
+        const existIdx = u.customRelics.findIndex(r => r.id === relic.id);  
+        if (existIdx >= 0) {  
+            u.customRelics[existIdx] = relic;  
+        } else {  
+            if (u.customRelics.length >= MAX_CUSTOM_RELICS) {  
+                return socket.emit('relic:saved', { ok: false, error: `最多保存 ${MAX_CUSTOM_RELICS} 个圣遗物` });  
+            }  
+            u.customRelics.push(relic);  
+        }  
+  
+        saveDb();  
+        socket.emit('relic:saved', { ok: true });  
+    });  
+  
+    // 删除自定义圣遗物  
+    socket.on('relic:delete', (data) => {  
+        const u = db.users[socket.username];  
+        if (!u || !u.customRelics) return;  
+        const { relicId } = data;  
+        u.customRelics = u.customRelics.filter(r => r.id !== relicId);  
+        saveDb();  
+        socket.emit('relic:deleted', { ok: true });  
     });
 
     // ==========================================

@@ -100,8 +100,6 @@ jsonGen.forBlock['hook_executeRelicAction'] = function (block) {
 // ==========================================  
 // 二、VFX 预设块（顶层，由 generateRelicConfig 单独收集）  
 // 返回格式：  $$VFX:type:{ ...config... }$$ 
-// 注意：为了防止和第十四部分的普通语句块重名被覆盖，这里统一加了 _top 后缀
-// 你需要在定义这些顶层积木的地方，把类型名也改成 vfx_top_glow 等
 // ==========================================  
   
 jsonGen.forBlock['vfx_top_glow'] = function (block) {  
@@ -145,7 +143,6 @@ jsonGen.forBlock['vfx_top_card_override'] = function (block) {
 jsonGen.forBlock['action_heal'] = function (block) {  
     const who = valCode(block, 'WHO', { type: 'player_ref', ref: 'self' });  
     const amount = valCode(block, 'AMOUNT', 1);  
-    // 修复：who 本身已经是 JSON 字符串，不需要再加双引号
     const node = `{"type":"heal","who":${who},"amount":${amount}}`;  
     return node + ',\n';  
 };  
@@ -159,8 +156,8 @@ jsonGen.forBlock['action_self_damage'] = function (block) {
 jsonGen.forBlock['action_apply_damage'] = function (block) {  
     const target = valCode(block, 'TARGET', { type: 'player_ref', ref: 'target' });  
     const damage = valCode(block, 'DAMAGE', 1);  
-    const isNormal = block.getFieldValue('IS_NORMAL') === 'TRUE';  
-    // 修复：target 不需要加双引号
+    // 🔧 修复 Bug 11: 下拉菜单的值是小写 'true'/'false'
+    const isNormal = block.getFieldValue('IS_NORMAL') === 'true';  
     const node = `{"type":"apply_damage","target":${target},"damage":${damage},"isNormal":${isNormal}}`;  
     return node + ',\n';  
 };  
@@ -169,8 +166,10 @@ jsonGen.forBlock['action_sync_states'] = function () {
     return '{"type":"sync_states"},\n';  
 };  
   
-jsonGen.forBlock['action_update_shield'] = function () {  
-    return '{"type":"update_shield"},\n';  
+jsonGen.forBlock['action_update_shield'] = function (block) {  
+    // 🔧 修复: 之前忽略了 block 参数并且没有读取 WHO 输入
+    const who = valCode(block, 'WHO', { type: 'player_ref', ref: 'self' });
+    return `{"type":"update_shield","who":${who}},\n`;  
 };  
   
 // ==========================================  
@@ -189,7 +188,6 @@ jsonGen.forBlock['action_emit_vfx'] = function (block) {
     const text = block.getFieldValue('TEXT') || '-1';  
     const color = block.getFieldValue('COLOR') || '#ff007f';  
     const vfxType = block.getFieldValue('VFX_TYPE') || 'dmg';  
-    // 修复：who 不需要加双引号
     const node = `{"type":"emit_vfx","who":${who},"text":"${escStr(text)}","color":"${escStr(color)}","vfxType":"${vfxType}"}`;  
     return node + ',\n';  
 };  
@@ -199,6 +197,15 @@ jsonGen.forBlock['action_emit_vfx'] = function (block) {
 // ==========================================  
   
 jsonGen.forBlock['control_if'] = function (block) {  
+    const condition = valCode(block, 'CONDITION', { type: 'literal', value: true });  
+    const thenBody = stmtArray(block, 'THEN');  
+    const elseBody = stmtArray(block, 'ELSE');  
+    const node = `{"type":"if","condition":${condition},"then":${thenBody},"else":${elseBody}}`;  
+    return node + ',\n';  
+};  
+  
+// 🔧 修复: 添加漏掉的 control_if_else，它的逻辑和 control_if 一致（Blockly 的机制也是提取同样的输入）
+jsonGen.forBlock['control_if_else'] = function (block) {  
     const condition = valCode(block, 'CONDITION', { type: 'literal', value: true });  
     const thenBody = stmtArray(block, 'THEN');  
     const elseBody = stmtArray(block, 'ELSE');  
@@ -298,14 +305,16 @@ jsonGen.forBlock['math_arithmetic'] = function (block) {
 };  
   
 jsonGen.forBlock['math_minmax'] = function (block) {  
-    const op = block.getFieldValue('OP') || 'min';  
+    // 🔧 修复: 字段名为 'FUNC'
+    const op = block.getFieldValue('FUNC') || 'min';  
     const a = valCode(block, 'A', 0);  
     const b = valCode(block, 'B', 0);  
     return [`{"type":"math_op","op":"${op}","a":${a},"b":${b}}`, ORDER_ATOMIC];  
 };  
   
 jsonGen.forBlock['math_round'] = function (block) {  
-    const op = block.getFieldValue('OP') || 'floor';  
+    // 🔧 修复: 字段名为 'MODE'
+    const op = block.getFieldValue('MODE') || 'floor';  
     const value = valCode(block, 'VALUE', 0);  
     return [`{"type":"math_op","op":"${op}","a":${value},"b":{"type":"literal","value":0}}`, ORDER_ATOMIC];  
 };  
@@ -334,7 +343,8 @@ jsonGen.forBlock['logic_not'] = function (block) {
 };  
   
 jsonGen.forBlock['logic_boolean'] = function (block) {  
-    const val = block.getFieldValue('BOOL') === 'TRUE';  
+    // 🔧 修复: 字段名改为 'VALUE'，判定改为小写 'true'
+    const val = block.getFieldValue('VALUE') === 'true';  
     return [`{"type":"literal","value":${val}}`, ORDER_ATOMIC];  
 };  
   
@@ -353,12 +363,13 @@ jsonGen.forBlock['value_count_alive'] = function () {
 jsonGen.forBlock['value_random'] = function (block) {  
     const min = valCode(block, 'MIN', 0);  
     const max = valCode(block, 'MAX', 1);  
-    const integer = block.getFieldValue('INTEGER') === 'TRUE';  
+    const integer = block.getFieldValue('INTEGER') === 'TRUE';  // 这里因为之前发你的积木改的是 'TRUE' 所以保持兼容，不需要动
     return [`{"type":"random","min":${min},"max":${max},"integer":${integer}}`, ORDER_ATOMIC];  
 };  
   
 jsonGen.forBlock['value_hook_param'] = function (block) {  
-    const param = block.getFieldValue('PARAM') || 'baseDmg';  
+    // 🔧 修复: 字段名改为 'NAME'
+    const param = block.getFieldValue('NAME') || 'baseDmg';  
     return [`{"type":"local_var","name":"${param}"}`, ORDER_ATOMIC];  
 };  
   
@@ -390,7 +401,8 @@ jsonGen.forBlock['action_set_result_damage'] = function (block) {
 };  
   
 jsonGen.forBlock['action_set_shield'] = function (block) {  
-    const value = block.getFieldValue('VALUE') === 'TRUE';  
+    // 🔧 修复: 判定改为小写 'true'
+    const value = block.getFieldValue('VALUE') === 'true';  
     return `{"type":"set_shield","value":{"type":"literal","value":${value}}},\n`;  
 };  
   
@@ -421,7 +433,8 @@ jsonGen.forBlock['set_prop_number'] = function (block) {
 jsonGen.forBlock['set_prop_boolean'] = function (block) {  
     const who = valCode(block, 'WHO', { type: 'player_ref', ref: 'self' });  
     const prop = block.getFieldValue('PROP') || 'shield';  
-    const value = block.getFieldValue('VALUE') === 'TRUE';  
+    // 🔧 修复: 判定改为小写 'true'
+    const value = block.getFieldValue('VALUE') === 'true';  
     return `{"type":"set_player_prop","who":${who},"prop":"${prop}","value":{"type":"literal","value":${value}}},\n`;  
 };  
   
