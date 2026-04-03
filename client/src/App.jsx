@@ -7,6 +7,7 @@ import LobbyScreen from './screens/LobbyScreen';
 
 // 懒加载重型场景
 const BattleArena = React.lazy(() => import('./screens/BattleArena'));
+const RelicEditorScreen = React.lazy(() => import('./screens/RelicEditorScreen'));
 
 let bgmCtx = null;
 
@@ -73,6 +74,9 @@ const App = () => {
     const handleLeaveRoom = () => { setActiveRoom(null); setGameState('LOBBY'); };
     const handleUpdateUser = (u) => { setUser(u); };
 
+    const handleOpenEditor = () => { setGameState('RELIC_EDITOR'); };  
+    const handleEditorBack = () => { setGameState('LOBBY'); };
+
     useEffect(() => {
         const onRoomStateUpdate = (room) => {
             if (!user) return;
@@ -99,11 +103,17 @@ const App = () => {
             <BackgroundEngine theme={user?.settings?.bgTheme || 'stars'} />
             {gameState === 'LOADING' && <div className="h-screen w-full flex items-center justify-center text-brand-cyan font-mono animate-pulse tracking-widest text-center px-4">SYSTEM BOOTING...</div>}
             {gameState === 'LOGIN' && <LoginScreen onLogin={handleLogin} lang={lang} setLang={setLang} />}
-            {gameState === 'LOBBY' && <LobbyScreen user={user} onJoinRoom={()=>{}} onLogout={handleLogout} lang={lang} setLang={setLang} onUpdateUser={handleUpdateUser} />}
-            {gameState === 'ARENA' && (
-                <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center bg-[#030305] z-50 text-brand-cyan font-mono animate-pulse tracking-widest text-center px-4">CONNECTING TO NODE...</div>}>
-                    <BattleArena user={user} onLeave={handleLeaveRoom} lang={lang} onUpdateUser={handleUpdateUser} initialRoom={activeRoom} />
-                </Suspense>
+            {gameState === 'LOBBY' && <LobbyScreen user={user} onJoinRoom={()=>{}} onLogout={handleLogout} lang={lang} setLang={setLang} onUpdateUser={handleUpdateUser} onOpenEditor={handleOpenEditor} />}
+            {gameState === 'ARENA' && (  
+                <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center bg-[#030305] z-50 text-brand-cyan font-mono animate-pulse tracking-widest text-center px-4">CONNECTING TO NODE...</div>}>  
+                    <BattleArena user={user} onLeave={handleLeaveRoom} lang={lang} onUpdateUser={handleUpdateUser} initialRoom={activeRoom} />  
+                </Suspense>  
+            )}  
+            {/* ↓↓↓ 新增：圣遗物编辑器 ↓↓↓ */}  
+            {gameState === 'RELIC_EDITOR' && (  
+                <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center bg-[#030305] z-50 text-brand-cyan font-mono animate-pulse tracking-widest text-center px-4">LOADING WORKSHOP...</div>}>  
+                    <RelicEditorScreen user={user} onBack={handleEditorBack} />  
+                </Suspense>  
             )}
         </>
     );

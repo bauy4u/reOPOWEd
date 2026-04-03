@@ -110,7 +110,7 @@ const ModulesScreen = ({ user, onClose, lang }) => {
     );
 };
 
-const LobbyScreen = ({ user, onJoinRoom, onLogout, lang, setLang }) => {
+const LobbyScreen = ({ user, onJoinRoom, onLogout, lang, setLang, onOpenEditor }) => {
     const t = I18N[lang];
     const [rooms, setRooms] = useState([]);
     const [showCreateModal, setShowCreateModal] = useState(false); const [createSettings, setCreateSettings] = useState({ max: 2, hp: 10 });
@@ -529,6 +529,10 @@ const LobbyScreen = ({ user, onJoinRoom, onLogout, lang, setLang }) => {
                             <div className="text-brand-cyan mb-1 md:mb-2 transform group-hover:scale-125 transition text-lg md:text-2xl"><IconBook /></div>
                             <span className="text-[10px] md:text-xs font-bold tracking-widest text-brand-cyan">{t.btn_db}</span>
                         </button>
+                        <button onClick={onOpenEditor} className="glass-panel py-3 md:py-5 rounded-xl flex flex-col items-center justify-center hover:bg-brand-purple/10 hover:border-brand-purple/50 transition group">  
+                            <div className="text-brand-purple mb-1 md:mb-2 transform group-hover:scale-125 transition text-lg md:text-2xl">🔧</div>  
+                            <span className="text-[10px] md:text-xs font-bold tracking-widest text-brand-purple">工坊</span>  
+                        </button>
                     </div>
 
                     {/* Accordions */}
@@ -576,7 +580,7 @@ const LobbyScreen = ({ user, onJoinRoom, onLogout, lang, setLang }) => {
                                                         {stat === 'playing' || stat === 'in_room' ? <span className="text-[9px] md:text-[10px] text-brand-pink font-mono animate-pulse">{t.soc_status_ingame}</span> : <span className="text-[9px] md:text-[10px] text-green-400 font-mono">{t.soc_status_online}</span>}
                                                     </div>
                                                     {isExp && (
-                                                        <div className="grid grid-cols-2 gap-px bg-gray-800 border-t border-gray-800">
+                                                        <div className="grid grid-cols-4 md:grid-cols-5 gap-2 md:gap-3 shrink-0">
                                                             <button onClick={()=>setPmTarget(fname)} className="bg-black/80 py-2 text-[10px] text-brand-cyan hover:bg-brand-cyan/20 flex justify-center items-center gap-1 transition"><IconMail className="w-3 h-3"/> PM</button>
                                                             <button onClick={()=>setTransferTarget(fname)} className="bg-black/80 py-2 text-[10px] text-brand-gold hover:bg-brand-gold/20 flex justify-center items-center gap-1 transition"><IconGift className="w-3 h-3"/> Transfer</button>
                                                             <button onClick={()=>setSelectedProfileTarget(fname)} className="bg-black/80 py-2 text-[10px] text-gray-400 hover:bg-white/10 flex justify-center items-center gap-1 transition col-span-1">Profile</button>

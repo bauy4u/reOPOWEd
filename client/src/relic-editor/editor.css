@@ -1,0 +1,715 @@
+/**  
+ * editor.css — 圣遗物积木编辑器样式  
+ *  
+ * 覆盖 Blockly 内部 UI 的默认样式，使其匹配项目的深色赛博主题。  
+ * 同时定义编辑器页面专属的组件样式和动画。  
+ *  
+ * 注意：Blockly 的内部类名以 .blockly 开头，这些是 Blockly 库自带的，  
+ * 不要改名，只覆写样式。  
+ */  
+  
+/* ==========================================  
+   一、Blockly 工作区深色主题覆写  
+   ========================================== */  
+  
+/* 工具箱容器 */  
+.blocklyToolboxDiv {  
+    background: #111118 !important;  
+    border-right: 1px solid rgba(0, 240, 255, 0.1) !important;  
+    font-family: 'Noto Sans SC', 'Fira Code', monospace !important;  
+    scrollbar-width: thin;  
+    scrollbar-color: rgba(0, 240, 255, 0.3) transparent;  
+}  
+  
+/* 工具箱分类标签 */  
+.blocklyTreeRow {  
+    padding: 6px 12px !important;  
+    margin: 1px 4px !important;  
+    border-radius: 6px !important;  
+    transition: background 0.15s ease;  
+}  
+  
+.blocklyTreeRow:hover {  
+    background: rgba(255, 255, 255, 0.06) !important;  
+}  
+  
+.blocklyTreeSelected {  
+    background: rgba(0, 240, 255, 0.12) !important;  
+}  
+  
+.blocklyTreeLabel {  
+    font-size: 12px !important;  
+    color: #ccc !important;  
+    font-family: 'Noto Sans SC', sans-serif !important;  
+}  
+  
+.blocklyTreeSelected .blocklyTreeLabel {  
+    color: #00f0ff !important;  
+}  
+  
+/* 工具箱分类图标（颜色指示条） */  
+.blocklyTreeIcon {  
+    display: none !important;  
+}  
+  
+.blocklyTreeRowContentContainer {  
+    padding-left: 4px !important;  
+}  
+  
+/* 弹出面板（flyout） */  
+.blocklyFlyoutBackground {  
+    fill: #15151f !important;  
+    fill-opacity: 0.97 !important;  
+    stroke: rgba(0, 240, 255, 0.08) !important;  
+    stroke-width: 1 !important;  
+}  
+  
+/* 滚动条 */  
+.blocklyScrollbarHandle {  
+    fill: rgba(0, 240, 255, 0.25) !important;  
+    rx: 4 !important;  
+    ry: 4 !important;  
+}  
+  
+.blocklyScrollbarHandle:hover {  
+    fill: rgba(0, 240, 255, 0.4) !important;  
+}  
+  
+.blocklyScrollbarBackground {  
+    fill: transparent !important;  
+}  
+  
+/* 右键菜单 */  
+.blocklyContextMenu {  
+    background: rgba(15, 15, 25, 0.95) !important;  
+    backdrop-filter: blur(12px) !important;  
+    border: 1px solid rgba(0, 240, 255, 0.15) !important;  
+    border-radius: 8px !important;  
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;  
+    padding: 4px !important;  
+    font-family: 'Noto Sans SC', sans-serif !important;  
+}  
+  
+.blocklyContextMenu .blocklyMenuItem {  
+    color: #ddd !important;  
+    font-size: 12px !important;  
+    padding: 6px 12px !important;  
+    border-radius: 4px !important;  
+}  
+  
+.blocklyContextMenu .blocklyMenuItem:hover {  
+    background: rgba(0, 240, 255, 0.12) !important;  
+    color: #00f0ff !important;  
+}  
+  
+.blocklyContextMenu .blocklyMenuItemDisabled {  
+    color: #555 !important;  
+}  
+  
+.blocklyContextMenu .blocklyMenuItemDisabled:hover {  
+    background: transparent !important;  
+    color: #555 !important;  
+}  
+  
+/* Tooltip */  
+.blocklyTooltipDiv {  
+    background: rgba(10, 10, 20, 0.95) !important;  
+    backdrop-filter: blur(8px) !important;  
+    border: 1px solid rgba(0, 240, 255, 0.2) !important;  
+    border-radius: 6px !important;  
+    color: #ccc !important;  
+    font-family: 'Noto Sans SC', sans-serif !important;  
+    font-size: 11px !important;  
+    padding: 6px 10px !important;  
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;  
+    max-width: 280px !important;  
+    line-height: 1.5 !important;  
+}  
+  
+/* 积木拖拽时的阴影 */  
+.blocklyDragging > .blocklyPath {  
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));  
+}  
+  
+/* 选中积木的高亮边框 */  
+.blocklySelected > .blocklyPath {  
+    stroke: #00f0ff !important;  
+    stroke-width: 2px !important;  
+    filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.4));  
+}  
+  
+/* 垃圾桶 */  
+.blocklyTrash {  
+    opacity: 0.4;  
+    transition: opacity 0.2s ease;  
+}  
+  
+.blocklyTrash:hover {  
+    opacity: 0.8;  
+}  
+  
+/* 缩放按钮 */  
+.blocklyZoom > image {  
+    opacity: 0.3 !important;  
+    transition: opacity 0.2s ease;  
+}  
+  
+.blocklyZoom > image:hover {  
+    opacity: 0.7 !important;  
+}  
+  
+/* 网格线（如果启用） */  
+.blocklyGridLine {  
+    stroke: rgba(255, 255, 255, 0.03) !important;  
+}  
+  
+/* 连接高亮（拖拽积木靠近可连接点时） */  
+.blocklyHighlightedConnectionPath {  
+    stroke: #00f0ff !important;  
+    stroke-width: 4px !important;  
+    fill: none !important;  
+}  
+  
+/* 输入框（文本/数字输入） */  
+.blocklyHtmlInput {  
+    background: rgba(0, 0, 0, 0.8) !important;  
+    border: 1px solid rgba(0, 240, 255, 0.3) !important;  
+    border-radius: 4px !important;  
+    color: #fff !important;  
+    font-family: 'Fira Code', monospace !important;  
+    font-size: 12px !important;  
+    padding: 2px 6px !important;  
+    outline: none !important;  
+}  
+  
+.blocklyHtmlInput:focus {  
+    border-color: #00f0ff !important;  
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.3) !important;  
+}  
+  
+/* 下拉菜单 */  
+.blocklyDropDownDiv {  
+    background-color: rgba(15, 15, 25, 0.95) !important;  
+    border: 1px solid rgba(0, 240, 255, 0.15) !important;  
+    border-radius: 8px !important;  
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;  
+}  
+  
+.blocklyDropDownDiv .blocklyMenuItem {  
+    color: #ddd !important;  
+    font-size: 12px !important;  
+    font-family: 'Noto Sans SC', sans-serif !important;  
+}  
+  
+.blocklyDropDownDiv .blocklyMenuItem:hover {  
+    background: rgba(0, 240, 255, 0.12) !important;  
+}  
+  
+/* 气泡（注释气泡） */  
+.blocklyBubbleCanvas .blocklyCommentTextarea {  
+    background: rgba(10, 10, 20, 0.9) !important;  
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;  
+    border-radius: 4px !important;  
+    color: #ccc !important;  
+    font-family: 'Noto Sans SC', sans-serif !important;  
+    font-size: 11px !important;  
+    resize: none !important;  
+}  
+  
+/* ==========================================  
+   二、编辑器页面布局  
+   ========================================== */  
+  
+/* Blockly 画布容器 —— 必须有明确的宽高，否则 Blockly 不渲染 */  
+.relic-editor-workspace {  
+    width: 100%;  
+    height: 100%;  
+    position: relative;  
+    overflow: hidden;  
+    border-radius: 0 0 12px 12px;  
+}  
+  
+/* 确保 Blockly 注入的 SVG 填满容器 */  
+.relic-editor-workspace .injectionDiv {  
+    height: 100% !important;  
+    width: 100% !important;  
+}  
+  
+/* ==========================================  
+   三、Emoji 选择器  
+   ========================================== */  
+  
+.emoji-picker-grid {  
+    display: grid;  
+    grid-template-columns: repeat(10, 1fr);  
+    gap: 2px;  
+    padding: 8px;  
+    max-height: 200px;  
+    overflow-y: auto;  
+    scrollbar-width: thin;  
+    scrollbar-color: rgba(0, 240, 255, 0.3) transparent;  
+}  
+  
+.emoji-picker-grid::-webkit-scrollbar {  
+    width: 4px;  
+}  
+  
+.emoji-picker-grid::-webkit-scrollbar-thumb {  
+    background: rgba(0, 240, 255, 0.3);  
+    border-radius: 2px;  
+}  
+  
+.emoji-picker-item {  
+    display: flex;  
+    align-items: center;  
+    justify-content: center;  
+    width: 32px;  
+    height: 32px;  
+    border-radius: 6px;  
+    cursor: pointer;  
+    font-size: 18px;  
+    transition: all 0.15s ease;  
+    background: transparent;  
+    border: 1px solid transparent;  
+}  
+  
+.emoji-picker-item:hover {  
+    background: rgba(0, 240, 255, 0.1);  
+    border-color: rgba(0, 240, 255, 0.3);  
+    transform: scale(1.2);  
+}  
+  
+.emoji-picker-item.selected {  
+    background: rgba(0, 240, 255, 0.15);  
+    border-color: #00f0ff;  
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);  
+}  
+  
+/* ==========================================  
+   四、JSON 预览区  
+   ========================================== */  
+  
+.json-preview {  
+    background: rgba(5, 5, 10, 0.8);  
+    border: 1px solid rgba(255, 255, 255, 0.06);  
+    border-radius: 8px;  
+    padding: 16px;  
+    overflow: auto;  
+    font-family: 'Fira Code', monospace;  
+    font-size: 11px;  
+    line-height: 1.6;  
+    color: #aaa;  
+    tab-size: 2;  
+    white-space: pre-wrap;  
+    word-break: break-all;  
+    max-height: 100%;  
+    scrollbar-width: thin;  
+    scrollbar-color: rgba(138, 43, 226, 0.3) transparent;  
+}  
+  
+.json-preview::-webkit-scrollbar {  
+    width: 6px;  
+}  
+  
+.json-preview::-webkit-scrollbar-thumb {  
+    background: rgba(138, 43, 226, 0.3);  
+    border-radius: 3px;  
+}  
+  
+.json-preview::-webkit-scrollbar-thumb:hover {  
+    background: rgba(138, 43, 226, 0.5);  
+}  
+  
+/* JSON 语法高亮（如果用 dangerouslySetInnerHTML 手动着色） */  
+.json-key {  
+    color: #00f0ff;  
+}  
+  
+.json-string {  
+    color: #ff007f;  
+}  
+  
+.json-number {  
+    color: #ffd700;  
+}  
+  
+.json-boolean {  
+    color: #8a2be2;  
+}  
+  
+.json-null {  
+    color: #666;  
+}  
+  
+/* ==========================================  
+   五、模板卡片  
+   ========================================== */  
+  
+.template-card {  
+    background: rgba(15, 15, 25, 0.6);  
+    border: 1px solid rgba(255, 255, 255, 0.08);  
+    border-radius: 12px;  
+    padding: 16px;  
+    cursor: pointer;  
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);  
+    display: flex;  
+    flex-direction: column;  
+    gap: 8px;  
+}  
+  
+.template-card:hover {  
+    background: rgba(0, 240, 255, 0.06);  
+    border-color: rgba(0, 240, 255, 0.25);  
+    transform: translateY(-2px);  
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3),  
+                0 0 20px rgba(0, 240, 255, 0.08);  
+}  
+  
+.template-card:active {  
+    transform: translateY(0);  
+}  
+  
+.template-card-icon {  
+    font-size: 32px;  
+    line-height: 1;  
+}  
+  
+.template-card-name {  
+    font-family: 'Noto Sans SC', sans-serif;  
+    font-size: 14px;  
+    font-weight: 600;  
+    color: #eee;  
+}  
+  
+.template-card-desc {  
+    font-family: 'Noto Sans SC', sans-serif;  
+    font-size: 11px;  
+    color: #888;  
+    line-height: 1.4;  
+}  
+  
+/* ==========================================  
+   六、保存列表项  
+   ========================================== */  
+  
+.save-list-item {  
+    display: flex;  
+    align-items: center;  
+    gap: 12px;  
+    padding: 10px 14px;  
+    background: rgba(15, 15, 25, 0.4);  
+    border: 1px solid rgba(255, 255, 255, 0.06);  
+    border-radius: 8px;  
+    transition: all 0.15s ease;  
+}  
+  
+.save-list-item:hover {  
+    background: rgba(255, 255, 255, 0.04);  
+    border-color: rgba(255, 255, 255, 0.12);  
+}  
+  
+.save-list-item-icon {  
+    font-size: 24px;  
+    flex-shrink: 0;  
+}  
+  
+.save-list-item-info {  
+    flex: 1;  
+    min-width: 0;  
+}  
+  
+.save-list-item-name {  
+    font-size: 13px;  
+    font-weight: 600;  
+    color: #ddd;  
+    white-space: nowrap;  
+    overflow: hidden;  
+    text-overflow: ellipsis;  
+}  
+  
+.save-list-item-id {  
+    font-family: 'Fira Code', monospace;  
+    font-size: 10px;  
+    color: #666;  
+}  
+  
+.save-list-item-actions {  
+    display: flex;  
+    gap: 6px;  
+    flex-shrink: 0;  
+}  
+  
+.save-list-btn {  
+    font-size: 11px;  
+    font-family: 'Fira Code', monospace;  
+    padding: 4px 10px;  
+    border-radius: 4px;  
+    border: 1px solid rgba(255, 255, 255, 0.1);  
+    background: rgba(255, 255, 255, 0.04);  
+    color: #aaa;  
+    cursor: pointer;  
+    transition: all 0.15s ease;  
+}  
+  
+.save-list-btn:hover {  
+    background: rgba(0, 240, 255, 0.1);  
+    border-color: rgba(0, 240, 255, 0.3);  
+    color: #00f0ff;  
+}  
+  
+.save-list-btn-danger:hover {  
+    background: rgba(255, 0, 127, 0.1);  
+    border-color: rgba(255, 0, 127, 0.3);  
+    color: #ff007f;  
+}  
+  
+/* ==========================================  
+   七、标签页切换过渡  
+   ========================================== */  
+  
+.editor-tab-content {  
+    position: relative;  
+    flex: 1;  
+    min-height: 0;  
+    overflow: hidden;  
+}  
+  
+.editor-tab-panel {  
+    position: absolute;  
+    inset: 0;  
+    transition: opacity 0.2s ease, visibility 0.2s ease;  
+}  
+  
+.editor-tab-panel[data-active="false"] {  
+    opacity: 0;  
+    visibility: hidden;  
+    pointer-events: none;  
+}  
+  
+.editor-tab-panel[data-active="true"] {  
+    opacity: 1;  
+    visibility: visible;  
+    pointer-events: auto;  
+}  
+  
+/* ==========================================  
+   八、动画  
+   ========================================== */  
+  
+/* 保存成功闪烁 */  
+@keyframes editorSaveFlash {  
+    0% {  
+        box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.4);  
+    }  
+    50% {  
+        box-shadow: 0 0 30px 10px rgba(0, 240, 255, 0.15);  
+    }  
+    100% {  
+        box-shadow: 0 0 0 0 rgba(0, 240, 255, 0);  
+    }  
+}  
+  
+.editor-save-flash {  
+    animation: editorSaveFlash 0.6s ease-out;  
+}  
+  
+/* 模板弹窗入场 */  
+@keyframes editorModalIn {  
+    0% {  
+        opacity: 0;  
+        transform: scale(0.95) translateY(10px);  
+    }  
+    100% {  
+        opacity: 1;  
+        transform: scale(1) translateY(0);  
+    }  
+}  
+  
+.editor-modal-enter {  
+    animation: editorModalIn 0.25s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;  
+}  
+  
+/* 保存列表项入场（交错动画） */  
+@keyframes editorListItemIn {  
+    0% {  
+        opacity: 0;  
+        transform: translateX(-10px);  
+    }  
+    100% {  
+        opacity: 1;  
+        transform: translateX(0);  
+    }  
+}  
+  
+.save-list-item {  
+    animation: editorListItemIn 0.3s ease-out forwards;  
+    opacity: 0;  
+}  
+  
+.save-list-item:nth-child(1) { animation-delay: 0s; }  
+.save-list-item:nth-child(2) { animation-delay: 0.05s; }  
+.save-list-item:nth-child(3) { animation-delay: 0.1s; }  
+.save-list-item:nth-child(4) { animation-delay: 0.15s; }  
+.save-list-item:nth-child(5) { animation-delay: 0.2s; }  
+.save-list-item:nth-child(6) { animation-delay: 0.25s; }  
+.save-list-item:nth-child(7) { animation-delay: 0.3s; }  
+.save-list-item:nth-child(8) { animation-delay: 0.35s; }  
+  
+/* 空状态提示 */  
+.editor-empty-state {  
+    display: flex;  
+    flex-direction: column;  
+    align-items: center;  
+    justify-content: center;  
+    height: 100%;  
+    gap: 12px;  
+    color: #555;  
+    font-family: 'Noto Sans SC', sans-serif;  
+}  
+  
+.editor-empty-state-icon {  
+    font-size: 48px;  
+    opacity: 0.3;  
+}  
+  
+.editor-empty-state-text {  
+    font-size: 14px;  
+}  
+  
+/* ==========================================  
+   九、底部状态栏  
+   ========================================== */  
+  
+.editor-status-bar {  
+    display: flex;  
+    align-items: center;  
+    justify-content: space-between;  
+    padding: 4px 16px;  
+    background: rgba(5, 5, 10, 0.6);  
+    border-top: 1px solid rgba(255, 255, 255, 0.04);  
+    font-family: 'Fira Code', monospace;  
+    font-size: 10px;  
+    color: #555;  
+    flex-shrink: 0;  
+}  
+  
+.editor-status-bar-item {  
+    display: flex;  
+    align-items: center;  
+    gap: 6px;  
+}  
+  
+.editor-status-dot {  
+    width: 6px;  
+    height: 6px;  
+    border-radius: 50%;  
+    background: #333;  
+}  
+  
+.editor-status-dot.active {  
+    background: #00ff00;  
+    box-shadow: 0 0 6px rgba(0, 255, 0, 0.4);  
+}  
+  
+/* ==========================================  
+   十、响应式适配  
+   ========================================== */  
+  
+/* 小屏幕：工具箱收窄 */  
+@media (max-width: 768px) {  
+    .blocklyToolboxDiv {  
+        width: 120px !important;  
+    }  
+  
+    .blocklyTreeLabel {  
+        font-size: 10px !important;  
+    }  
+  
+    .blocklyTreeRow {  
+        padding: 4px 8px !important;  
+    }  
+  
+    .emoji-picker-grid {  
+        grid-template-columns: repeat(6, 1fr);  
+    }  
+  
+    .template-card {  
+        padding: 12px;  
+    }  
+  
+    .template-card-icon {  
+        font-size: 24px;  
+    }  
+  
+    .template-card-name {  
+        font-size: 12px;  
+    }  
+  
+    .json-preview {  
+        font-size: 10px;  
+        padding: 10px;  
+    }  
+}  
+  
+/* 极小屏幕：隐藏部分 UI */  
+@media (max-width: 480px) {  
+    .blocklyToolboxDiv {  
+        width: 90px !important;  
+    }  
+  
+    .emoji-picker-grid {  
+        grid-template-columns: repeat(5, 1fr);  
+    }  
+  
+    .editor-status-bar {  
+        font-size: 9px;  
+        padding: 2px 8px;  
+    }  
+}  
+  
+/* ==========================================  
+   十一、自定义滚动条（全局应用于编辑器内）  
+   ========================================== */  
+  
+.relic-editor-root {  
+    scrollbar-width: thin;  
+    scrollbar-color: rgba(0, 240, 255, 0.2) transparent;  
+}  
+  
+.relic-editor-root ::-webkit-scrollbar {  
+    width: 5px;  
+    height: 5px;  
+}  
+  
+.relic-editor-root ::-webkit-scrollbar-track {  
+    background: transparent;  
+}  
+  
+.relic-editor-root ::-webkit-scrollbar-thumb {  
+    background: rgba(0, 240, 255, 0.2);  
+    border-radius: 3px;  
+}  
+  
+.relic-editor-root ::-webkit-scrollbar-thumb:hover {  
+    background: rgba(0, 240, 255, 0.4);  
+}  
+  
+/* ==========================================  
+   十二、复制按钮反馈  
+   ========================================== */  
+  
+@keyframes editorCopyPulse {  
+    0% {  
+        transform: scale(1);  
+    }  
+    50% {  
+        transform: scale(1.15);  
+    }  
+    100% {  
+        transform: scale(1);  
+    }  
+}  
+  
+.editor-copy-pulse {  
+    animation: editorCopyPulse 0.3s ease;  
+}
