@@ -76,8 +76,17 @@ const relicVFXRegistry = {
     }
 };
 
+const defaultVFX = {
+    getPlayerClasses() { return ''; },
+    renderOverlay() { return null; },
+    getHandOverride() { return null; },
+    renderStatusBar() { return null; }
+};
+
 export function getRelicVFX(chipId) {
-    return relicVFXRegistry[chipId] || null;
+    const entry = relicVFXRegistry[chipId];
+    if (!entry) return null;
+    return { ...defaultVFX, ...entry };
 }
 
 export default relicVFXRegistry;
