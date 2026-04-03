@@ -22,6 +22,7 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
 
     const [activeEmotes, setActiveEmotes] = useState({});
     const [showEmoteWheel, setShowEmoteWheel] = useState(false);
+    const [chatBubbles, setChatBubbles] = useState({});
 
     const [logs, setLogs] = useState([{ id: 0, text: t.log_init, type: 'system' }]);
     const [chatInput, setChatInput] = useState('');
@@ -86,6 +87,18 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
             'chat_message_broadcast': (msg) => {
                 setLogs(p => [...p, msg]);
                 if (!isChatOpen) setUnreadMsg(p => p + 1);
+                if (msg.type === 'chat' && msg.username) {
+                    const bubbleId = Date.now();
+                    setChatBubbles(prev => ({...prev, [msg.username]: { text: msg.text, id: bubbleId }}));
+                    setTimeout(() => {
+                        setChatBubbles(prev => {
+                            if (prev[msg.username]?.id === bubbleId) {
+                                const n = {...prev}; delete n[msg.username]; return n;
+                            }
+                            return prev;
+                        });
+                    }, 4000);
+                }
             },
             'game_over_state': (data) => {
                 setRoomState(prev => {
@@ -511,11 +524,20 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
                             </div>
 
                             <div className="relative flex flex-col items-center">
-                                {activeEmote && (
-                                    <div className="absolute -top-16 text-3xl md:text-4xl animate-emote-float z-50 drop-shadow-[0_0_10px_#fff]">
-                                        {activeEmote.e}
-                                    </div>
-                                )}
+                                                {activeEmote && (
+                                                    <div className="absolute -top-16 text-3xl md:text-4xl animate-emote-float z-50 drop-shadow-[0_0_10px_#fff]">
+                                                        {activeEmote.e}
+                                                    </div>
+                                                )}
+
+                                                {chatBubbles[p.name] && (
+                                                    <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in pointer-events-none" style={{maxWidth: '160px'}}>
+                                                        <div className="bg-black/90 border border-brand-cyan/40 rounded-lg px-2.5 py-1.5 shadow-[0_0_12px_rgba(0,240,255,0.15)]">
+                                                            <p className="text-white text-[10px] md:text-xs font-mono leading-tight" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-all'}}>{chatBubbles[p.name].text}</p>
+                                                        </div>
+                                                        <div className="w-0 h-0 mx-auto" style={{borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: '6px solid rgba(0,0,0,0.9)'}}></div>
+                                                    </div>
+                                                )}
 
                                 {showEmoteWheel && isMe && (
                                     <div className="absolute -top-24 w-28 h-28 md:w-32 md:h-32 bg-black/80 rounded-full border border-brand-cyan/50 backdrop-blur-md flex items-center justify-center gap-1 md:gap-2 flex-wrap p-2 z-50 animate-fade-in shadow-[0_0_30px_rgba(0,240,255,0.2)]">
