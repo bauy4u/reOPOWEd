@@ -8,6 +8,109 @@ import AvatarDisplay from '../components/AvatarDisplay';
 import ProfileModal from '../components/ProfileModal';
 import { IconLogOut, IconCrosshair, IconSend, IconMessageCircle, IconMinimize, IconUserPlus } from '../components/Icons';
 import { getRelicVFX } from '../relics/index';
+// ==========================================  
+// 自定义圣遗物 VFX 动态渲染器  
+// ==========================================  
+  
+const VFX_COLOR_MAP = {  
+    red:    { text: 'text-red-400',    border: 'border-red-500/50',    shadow: 'rgba(255,0,0,0.3)',    glow: 'rgba(255,0,0,VAR)' },  
+    orange: { text: 'text-orange-400', border: 'border-orange-500/50', shadow: 'rgba(255,102,0,0.3)',  glow: 'rgba(255,102,0,VAR)' },  
+    yellow: { text: 'text-yellow-400', border: 'border-yellow-500/50', shadow: 'rgba(255,215,0,0.3)',  glow: 'rgba(255,215,0,VAR)' },  
+    green:  { text: 'text-green-400',  border: 'border-green-500/50',  shadow: 'rgba(0,255,0,0.3)',    glow: 'rgba(0,255,0,VAR)' },  
+    cyan:   { text: 'text-cyan-400',   border: 'border-cyan-500/50',   shadow: 'rgba(0,240,255,0.3)',  glow: 'rgba(0,240,255,VAR)' },  
+    blue:   { text: 'text-blue-400',   border: 'border-blue-500/50',   shadow: 'rgba(0,102,255,0.3)',  glow: 'rgba(0,102,255,VAR)' },  
+    purple: { text: 'text-purple-400', border: 'border-purple-500/50', shadow: 'rgba(138,43,226,0.3)', glow: 'rgba(138,43,226,VAR)' },  
+    pink:   { text: 'text-pink-400',   border: 'border-pink-500/50',   shadow: 'rgba(255,0,127,0.3)',  glow: 'rgba(255,0,127,VAR)' },  
+};  
+  
+// 发光积木的颜色是 hex 值，需要转换  
+const HEX_TO_NAME = {  
+    '#ff0000': 'red', '#ff6600': 'orange', '#ffd700': 'yellow', '#00ff00': 'green',  
+    '#00f0ff': 'cyan', '#0066ff': 'blue', '#8a2be2': 'purple', '#ff007f': 'pink', '#ffffff': 'cyan',  
+};  
+  
+// 粒子动画 CSS keyframe 名称映射  
+const PARTICLE_ANIM = {  
+    float:    'hackerDigitFloat',   // 复用已有的上浮动画  
+    orbit:    'customOrbit',  
+    pulse:    'customPulse',  
+    drift:    'customDrift',  
+    fountain: 'customFountain',  
+    swing:    'customSwing',  
+};  
+  
+function buildCustomVFX(relicState) {  
+    const vfxConfig = relicState?._vfxConfig;  
+    if (!vfxConfig || !Array.isArray(vfxConfig) || vfxConfig.length === 0) return null;  
+  
+    return {  
+        // ① 发光效果 → 返回 inline style 用的 CSS 类名（用 style 代替，避免预定义大量 CSS）  
+        getPlayerClasses(player, rs) {  
+            const glow = vfxConfig.find(v => v.vfxType === 'glow');  
+            if (!glow) return '';  
+            // 条件变量为空字符串 = 始终生效；否则检查 relicState 中该变量是否为 truthy  
+            if (glow.conditionVar && !rs?.[glow.conditionVar]) return '';  
+            return 'custom-relic-glow';  
+        },  
+  
+        // ② 粒子效果 → 头像叠加层  
+        renderOverlay(player, rs) {  
+            const particles = vfxConfig.find(v => v.vfxType === 'particles');  
+            if (!particles) return null;  
+            if (particles.conditionVar && !rs?.[particles.conditionVar]) return null;  
+            const count = Math.min(Number(particles.count) || 5, 12);  
+            const animName = PARTICLE_ANIM[particles.animation] || 'hackerDigitFloat';  
+            return (  
+                <div style={{  
+                    position: 'absolute', inset: '-20px', pointerEvents: 'none', zIndex: 40,  
+                    display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center',  
+                    gap: '2px', overflow: 'hidden', borderRadius: '50%'  
+                }}>  
+                    {[...Array(count)].map((_, i) => (  
+                        <span key={i} style={{  
+                            fontSize: '14px', opacity: 0,  
+                            animation: `${animName} ${1.5 + Math.random()}s infinite ${i * 0.2}s ease-in-out`,  
+                        }}>{particles.emoji || '✨'}</span>  
+                    ))}  
+                </div>  
+            );  
+        },  
+  
+        // ③ 特殊卡牌覆盖  
+        getHandOverride(handValue, rs) {  
+            const card = vfxConfig.find(v =>  
+                v.vfxType === 'cardOverride' && Number(v.handValue) === handValue  
+            );  
+            if (!card) return null;  
+            if (card.conditionVar && !rs?.[card.conditionVar]) return null;  
+            const c = VFX_COLOR_MAP[card.color] || VFX_COLOR_MAP.cyan;  
+            return {  
+                icon: card.icon || '🔥',  
+                name: card.name || '特殊牌',  
+                className: '',  
+                // BattleArena 渲染时会读 className，但自定义卡牌用不到预定义 CSS  
+                // 如果需要卡牌发光，可以在这里加 style（但当前渲染代码只用 className）  
+            };  
+        },  
+  
+        // ④ 状态栏  
+        renderStatusBar(player, rs) {  
+            const bar = vfxConfig.find(v => v.vfxType === 'statusBar');  
+            if (!bar) return null;  
+            const c = VFX_COLOR_MAP[bar.color] || VFX_COLOR_MAP.cyan;  
+            // 将 {varName} 替换为 relicState 中的实际值  
+            const text = (bar.template || '').replace(/\{(\w+)\}/g, (_, key) =>  
+                rs?.[key] !== undefined ? rs[key] : '?'  
+            );  
+            return (  
+                <div className={`absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 border ${c.border} px-2 py-0.5 rounded text-[8px] md:text-[10px] font-mono ${c.text} whitespace-nowrap z-30`}  
+                     style={{ boxShadow: `0 0 10px ${c.shadow}` }}>  
+                    {text}  
+                </div>  
+            );  
+        }  
+    };  
+}
 
 const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
     const t = I18N[lang];
@@ -517,7 +620,7 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
                 }
 
                 // Relic VFX integration
-                const relicVFX = getRelicVFX(p.chip);
+                const relicVFX = getRelicVFX(p.chip) || buildCustomVFX(p.relicState);  
                 const relicState = p.relicState;
 
                 // Relic hand override for left hand
@@ -525,8 +628,22 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
                 // Relic hand override for right hand
                 const rightRelicOverride = relicVFX?.getHandOverride(pHands[1], relicState);
 
-                return (
-                    <div key={p.id} ref={el => seatRefs.current[p.id] = el} className={`absolute z-20 ${pIsDead ? 'opacity-30 grayscale' : ''} ${relicVFX?.getPlayerClasses(p, relicState) || ''}`} style={seatStyle} onContextMenu={e=>{e.preventDefault(); handleRightClickAvatar(p.name);}}>
+                    const glowConfig = p.relicState?._vfxConfig?.find(v => v.vfxType === 'glow');  
+                    const glowActive = glowConfig && (!glowConfig.conditionVar || p.relicState?.[glowConfig.conditionVar]);  
+                    const glowColorName = glowConfig ? (HEX_TO_NAME[glowConfig.color] || 'cyan') : null;  
+                    const glowC = glowActive ? VFX_COLOR_MAP[glowColorName] : null;  
+                    const intensityMap = { low: { outer: 0.2, inner: 0.05 }, medium: { outer: 0.4, inner: 0.1 }, high: { outer: 0.6, inner: 0.2 } };  
+                    const glowI = intensityMap[glowConfig?.intensity] || intensityMap.medium;  
+                    const customGlowStyle = glowActive && glowC ? {  
+                        boxShadow: `0 0 25px ${glowC.glow.replace('VAR', String(glowI.outer))}, inset 0 0 15px ${glowC.glow.replace('VAR', String(glowI.inner))}`,  
+                        borderColor: glowC.glow.replace('VAR', '0.4'),  
+                    } : {};  
+  
+                    return (  
+                    <div key={p.id} ref={el => seatRefs.current[p.id] = el}  
+                         className={`absolute z-20 ${pIsDead ? 'opacity-30 grayscale' : ''} ${relicVFX?.getPlayerClasses(p, relicState) || ''}`}  
+                         style={{...seatStyle, ...customGlowStyle}}  
+                         onContextMenu={e=>{e.preventDefault(); handleRightClickAvatar(p.name);}}>
                         <div className={`relative flex gap-3 md:gap-5 items-center justify-center p-2 rounded-3xl ${pShield && p.chip!=='chip_heavy' && p.chip!=='chip_assassin' ? 'player-shield-wrapper' : ''}`}>
                             <div onClick={() => handleHandClick(p.id, 0)} className={`holo-slot ${cSkin} w-[55px] h-[75px] md:w-[70px] md:h-[90px] rounded-xl flex flex-col items-center justify-center ${leftTargetable||(isMe&&statePhase==='SELECT_OWN'&&gameStarted)?'cursor-pointer':''} ${leftOwn?'selected-own':''} ${leftIsTarget?'selected-target':''} ${leftZeroLocked?'locked-zero':''} ${leftRelicOverride?.className || ''}`}>
                                 <span className="text-2xl md:text-3xl font-mono font-black drop-shadow-md relative z-10">{pHands[0]}</span>{leftRelicOverride ? <span className="absolute bottom-1 opacity-80 text-sm md:text-xl z-10">{leftRelicOverride.icon}</span> : (WEAPONS[pHands[0]] && <span className="absolute bottom-1 opacity-80 text-sm md:text-xl z-10">{WEAPONS[pHands[0]].icon}</span>)}

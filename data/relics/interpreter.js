@@ -103,8 +103,10 @@ class RelicInterpreter extends RelicBase {
     }  
   
     getCustomState(player) {  
-        return player.relicState || null;  
-    }  
+        if (!player.relicState) return null;  
+        // 将 VFX 配置附加到 relicState，供前端动态渲染  
+        return { ...player.relicState, _vfxConfig: this.config.vfx || [] };  
+    }
   
     // ==========================================  
     // 执行引擎  
