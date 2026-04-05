@@ -199,7 +199,7 @@ graph LR
 
 ```bash
 # 1. 克隆仓库
-git clone <repo-url>
+git clone https://github.com/bauy4u/reOPOWEd
 cd reOPOWEd
 
 # 2. 安装服务端依赖
