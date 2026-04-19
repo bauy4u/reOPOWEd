@@ -141,6 +141,7 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [selectedProfileTarget, setSelectedProfileTarget] = useState(null);
     const [questRewards, setQuestRewards] = useState({base:0, bonus:0});
+    const [shareCopied, setShareCopied] = useState(false);
 
     const logsEndRef = useRef(null);
     const seatRefs = useRef({});
@@ -232,6 +233,33 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
     const addBot = () => { socket.emit('add_bot', roomState.id); };
     const startGame = () => { socket.emit('start_game', roomState.id); };
     const doLeave = () => { socket.emit('leave_room', roomState.id); onLeave(); };
+
+    const buildShareUrl = () => {
+        if (!roomState?.id) return '';
+        const base = `${window.location.origin}${window.location.pathname}`;
+        return `${base}?room=${encodeURIComponent(roomState.id)}`;
+    };
+
+    const copyShareLink = async () => {
+        const url = buildShareUrl();
+        if (!url) return;
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(url);
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta); ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            }
+            setShareCopied(true);
+            playSFX('select');
+            setTimeout(() => setShareCopied(false), 1800);
+        } catch (e) {
+            window.prompt(lang === 'zh' ? '复制以下链接分享' : 'Copy link to share', url);
+        }
+    };
 
     const addLog = (text, type = 'info') => {
         setLogs(prev => [...prev, { id: Date.now()+Math.random(), text, time: new Date().toLocaleTimeString(), type }]);
@@ -428,7 +456,16 @@ const BattleArena = ({ user, lang, onLeave, onUpdateUser, initialRoom }) => {
             )}
 
             <div className="absolute top-0 w-full p-4 md:p-6 flex justify-between z-40 pointer-events-none">
-                <div className="glass-panel px-4 py-2 rounded-xl flex items-center gap-2 pointer-events-auto"><span className="text-brand-cyan font-mono text-[10px] md:text-sm tracking-widest">{roomState.id}</span></div>
+                <div className="flex items-center gap-2 pointer-events-auto">
+                    <div className="glass-panel px-4 py-2 rounded-xl flex items-center gap-2"><span className="text-brand-cyan font-mono text-[10px] md:text-sm tracking-widest">{roomState.id}</span></div>
+                    <button
+                        onClick={copyShareLink}
+                        title={lang === 'zh' ? '复制房间分享链接' : 'Copy room share link'}
+                        className={`glass-panel px-3 py-2 rounded-lg transition flex items-center gap-2 text-[10px] md:text-xs font-mono tracking-widest ${shareCopied ? 'text-green-400 border border-green-400/50' : 'text-brand-pink hover:bg-brand-pink/20'}`}>
+                        <span className="text-base md:text-lg leading-none">🔗</span>
+                        <span className="hidden sm:inline">{shareCopied ? (lang === 'zh' ? '已复制' : 'COPIED') : (lang === 'zh' ? '分享链接' : 'SHARE')}</span>
+                    </button>
+                </div>
                 <button onClick={doLeave} className="glass-panel px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/20 pointer-events-auto transition flex items-center gap-2 text-xs md:text-sm"><IconLogOut /> {t.btn_exit}</button>
             </div>
 
