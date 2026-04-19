@@ -158,6 +158,15 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 匿名访客：不落库，仅在 socket 上留下 username 用作标识
+    socket.on('authenticate_guest', (username) => {
+        if (!username || typeof username !== 'string') return;
+        // 防止与真实账号冲撞
+        if (db.users[username]) return;
+        socket.username = username;
+        socket.isGuest = true;
+    });
+
     // ==========================================
     // 资产与社交请求
     // ==========================================
